@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relevo · Materiales de estudio entre estudiantes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{ink:'#1F1F21',guinda:'#6B1A2F',bruma:'#F1F3F2',linea:'#D9DCDB'},fontFamily:{display:['"Bodoni Moda"','serif'],sans:['"Hanken Grotesk"','sans-serif']}}}}</script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const FIREBASE_CONFIG={apiKey:"AIzaSyC4maAl6-TdJpMFqbNJCGmgVLaRjC6GAos",authDomain:"relevo-ef3c5.firebaseapp.com",projectId:"relevo-ef3c5",appId:"1:528850617489:web:da32b10672268c63f66b30"};
+firebase.initializeApp(FIREBASE_CONFIG);const db=firebase.firestore();firebase.auth().languageCode='es';
+</script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>body{background:#F1F3F2;color:#1F1F21}:focus-visible{outline:2px solid #6B1A2F;outline-offset:2px}</style>
+</head>
+<body class="font-sans">
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo,useEffect}=React;
+const P={search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>',lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',file:'<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/>',calc:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',box:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',check:'<path d="M20 6 9 17l-5-5"/>',plus:'<path d="M5 12h14M12 5v14"/>',filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',bag:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>'};
+Object.assign(P,{left:'<path d="m15 18-6-6 6-6"/>',right:'<path d="m9 18 6-6-6-6"/>',zoom:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/>',camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>'});
+Object.assign(P,{star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/>',award:'<circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/>',info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>'});
+const I=({n,s=20,c='',f})=><svg className={c} width={s} height={s} viewBox="0 0 24 24" fill={f?'currentColor':'none'} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{__html:P[n]}}/>;
+const Logo=({size='text-3xl'})=><span className={`font-display ${size} tracking-tight leading-none`} aria-label="relevo">re<span className="text-guinda font-medium">l</span>evo</span>;
+
+const CATS=[{id:'Libros',icon:'book',label:'Libros y textos',tone:'#E4E0D8'},{id:'Maquetas',icon:'box',label:'Arquitectura y maquetas',tone:'#DDE2E0'},{id:'Calculadoras',icon:'calc',label:'Ingeniería y calculadoras',tone:'#E2DADC'},{id:'Útiles',icon:'pen',label:'Útiles e indumentaria',tone:'#E6E3DA'},{id:'Apuntes PDF',icon:'file',label:'Apuntes digitales PDF',tone:'#DCDFE3'}];
+
+/* ---------- Verificación de identidad ----------
+   Solo se aceptan correos de estos dominios. La universidad del usuario se deduce del dominio,
+   así nadie puede declarar una universidad que no es la suya. Esta lista debe ser idéntica
+   a la función uniMap() de las reglas de Firestore. */
+const UNIDOM={'upc.edu.pe':'UPC','pucp.edu.pe':'PUCP','aloe.ulima.edu.pe':'U de Lima','ulima.edu.pe':'U de Lima','utp.edu.pe':'UTP','upn.pe':'UPN','usmp.pe':'USMP','unmsm.edu.pe':'UNMSM','alum.up.edu.pe':'U del Pacífico'};
+const domOf=e=>((e||'').trim().toLowerCase().split('@')[1]||'');
+const UNIS0=[...new Set(Object.values(UNIDOM))];
+const CARR0=['Arquitectura','Ingeniería Civil','Ingeniería Industrial','Administración','Derecho','Medicina'];
+const CURS0=['Cálculo 1','Estática','Física 2','Contabilidad General','Administración de Operaciones'];
+/* La universidad no permite intercambios dentro del campus (TP, 4.4.1): solo puntos públicos cercanos. */
+const PTS=[['Centro comercial cercano','Patio de comidas o ingreso principal, con vigilancia y cámaras'],['Cafetería frente al campus','Local con mesas, a la vista de otras personas'],['Exterior de la puerta principal','Vereda frente a la garita de seguridad, en horario de clases']];
+const TS=()=>firebase.firestore.FieldValue.serverTimestamp();
+const norm=s=>(s||'').trim().replace(/\s+/g,' ');
+const uniq=(a,b)=>[...new Set([...a,...b.filter(Boolean)])].sort((x,y)=>x.localeCompare(y));
+const MAXF=4;
+const pics=p=>(p&&p.photos&&p.photos.length)?p.photos:(p&&p.photo?[p.photo]:[]);
+const shrink=f=>new Promise(res=>{const r=new FileReader();r.onerror=()=>res(null);r.onload=()=>{const im=new Image();im.onerror=()=>res(null);im.onload=()=>{const k=Math.min(1,800/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.55))};im.src=r.result};r.readAsDataURL(f)});
+const inApp=/FBAN|FBAV|FB_IAB|Instagram|Line\/|TikTok|musical_ly|Snapchat|LinkedInApp/i.test(navigator.userAgent);
+const CODEABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const genCode=()=>[...crypto.getRandomValues(new Uint32Array(6))].map(n=>CODEABC[n%CODEABC.length]).join('');
+const fdate=t=>t&&t.seconds?new Date(t.seconds*1000).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'}):'';
+const pct=x=>Math.round(x*100)+'%';
+
+/* ---------- Precio sugerido ----------
+   1) Modelo: precio nuevo × porcentaje de valor que conserva la categoría según su estado.
+   2) Mercado: con 3 o más publicaciones del mismo curso y categoría (últimos 180 días), cada precio
+      se lleva al mismo estado y se toma la mediana. Pesa 40% si el vendedor dio el precio nuevo y
+      70% si no lo dio (el modelo es menos confiable sin ese dato).
+   3) Tope del 85% del precio nuevo, mínimo S/ 5 y redondeo. */
+const RET={Libros:{Excelente:.65,Bueno:.50,Desgastado:.30},Calculadoras:{Excelente:.75,Bueno:.60,Desgastado:.40},Maquetas:{Excelente:.60,Bueno:.45,Desgastado:.25},'Útiles':{Excelente:.55,Bueno:.40,Desgastado:.20}};
+const REFNEW={Libros:120,Calculadoras:100,Maquetas:110,'Útiles':75};
+const PDFBASE=10;
+const ESTADOS={Excelente:'Como nuevo: completo, sin marcas ni fallas.',Bueno:'Uso leve visible (subrayado o rayones menores); completo y funciona bien.',Desgastado:'Marcas notorias o partes gastadas, pero cumple su función. Detalla qué falta.',Digital:'Archivo digital: no se desgasta.'};
+const retOf=(cat,cond)=>cat==='Apuntes PDF'?1:((RET[cat]||RET.Libros)[cond]||.5);
+const median=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const rnd=x=>x<30?Math.round(x):Math.round(x/5)*5;
+function suggest(f,items,uid){
+const pdf=f.cat==='Apuntes PDF';const nv=!pdf&&+f.newPrice>0?+f.newPrice:null;const cond=pdf?'Digital':f.cond;
+const base=pdf?PDFBASE:(nv||REFNEW[f.cat]||100);const ret=retOf(f.cat,cond);const model=base*ret;
+const c=norm(f.course).toLowerCase();const lim=Date.now()-180*864e5;
+const comps=c?items.filter(p=>p.ownerId!==uid&&p.cat===f.cat&&norm(p.course).toLowerCase()===c&&+p.price>0&&(p.createdAt&&p.createdAt.seconds?p.createdAt.seconds*1000:Date.now())>lim).map(p=>+p.price/retOf(f.cat,p.cond)*ret):[];
+const n=comps.length;const market=n>=3?median(comps):null;const w=market==null?0:(nv?.4:.7);
+let raw=(1-w)*model+w*(market||0);if(nv)raw=Math.min(raw,nv*.85);raw=Math.max(5,raw);
+return {price:rnd(raw),raw,model,market,n,w,base,ret,nv,pdf};
+}
+
+/* ---------- Reputación ----------
+   Solo cuentan compras confirmadas con el código de entrega. El puntaje bayesiano evita que un
+   vendedor con una sola reseña de 5 estrellas quede por encima de uno con muchas reseñas de 4.8. */
+const RC=3,RM=4;
+const EMPTYREP={n:0,sum:0,avg:0,score:RM,ventas:0,matchR:null,onTimeR:null,trusted:false};
+const Stars=({v,s=16})=><span className="inline-flex text-guinda" aria-label={`${v.toFixed(1)} de 5 estrellas`}>{[1,2,3,4,5].map(k=><I key={k} n="star" s={s} f={k<=Math.round(v)} c={k<=Math.round(v)?'':'text-ink/25'}/>)}</span>;
+const RepLine=({r})=><span className="inline-flex items-center gap-1">{r.n?<><I n="star" s={14} f c="text-guinda"/><b>{r.avg.toFixed(1)}</b><span className="text-ink/60">({r.n})</span></>:<span className="text-ink/60">Sin reseñas</span>}<span className="text-ink/60">· {r.ventas} {r.ventas===1?'venta':'ventas'}</span></span>;
+const Trusted=()=><span className="inline-flex items-center gap-1 text-xs bg-guinda text-white rounded-full px-2 py-0.5"><I n="award" s={13}/>Vendedor confiable</span>;
+
+const Photo=({p,big})=>{const c=CATS.find(x=>x.id===p.cat)||CATS[0];const ph=pics(p);return <div className={`relative flex items-center justify-center ${big?'h-56':'h-40'} rounded-xl overflow-hidden`} style={{background:c.tone}}>{ph[0]?<img src={ph[0]} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover"/>:<I n={c.icon} s={big?64:44} c="text-ink/50"/>}<span className="absolute left-3 bottom-3 text-xs bg-white/90 rounded-full px-2 py-0.5">{p.cond}</span>{ph.length>1&&<span className="absolute right-3 bottom-3 text-xs bg-ink/80 text-white rounded-full px-2 py-0.5">{ph.length} fotos</span>}</div>};
+const Gallery=({p,zoom})=>{const ph=pics(p);const [i,setI]=useState(0);const c=CATS.find(x=>x.id===p.cat)||CATS[0];if(!ph.length)return <Photo p={p} big/>;
+return <div><button type="button" onClick={()=>zoom(ph,i)} aria-label="Ver foto en grande" className="relative block w-full h-64 rounded-xl overflow-hidden cursor-zoom-in" style={{background:c.tone}}><img src={ph[i]} alt={`Foto ${i+1} de ${p.title}`} className="absolute inset-0 w-full h-full object-cover"/><span className="absolute left-3 bottom-3 text-xs bg-white/90 rounded-full px-2 py-0.5">{p.cond}</span><span className="absolute right-3 bottom-3 text-xs bg-ink/80 text-white rounded-full px-2.5 py-1 flex items-center gap-1"><I n="zoom" s={14}/>Ampliar{ph.length>1?` · ${i+1}/${ph.length}`:''}</span></button>
+{ph.length>1&&<div className="flex gap-2 mt-2 overflow-x-auto pb-1">{ph.map((s,k)=><button type="button" key={k} onClick={()=>setI(k)} aria-label={`Ver foto ${k+1}`} className={`w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 ${k===i?'border-guinda':'border-transparent opacity-70 hover:opacity-100'}`}><img src={s} alt="" className="w-full h-full object-cover"/></button>)}</div>}</div>};
+const Badge=({inst,uni})=>inst?<span className="inline-flex items-center gap-1 text-sm text-ink/70"><I n="shield" s={15} c="text-guinda"/>Verificado{uni?' · '+uni:''}</span>:<span className="inline-flex items-center gap-1 text-sm text-ink/50"><I n="info" s={15}/>Correo sin verificar</span>;
+const Card=({p,open,rep})=>{const r=rep(p.ownerId);return <button onClick={()=>open(p)} className="text-left bg-white border border-linea rounded-2xl p-3 hover:border-guinda transition-colors w-full">
+<Photo p={p}/><div className="pt-3 px-1 pb-1"><h3 className="font-medium leading-snug min-h-[2.75rem]">{p.title}</h3>
+<span className="font-display text-2xl block mt-2">S/ {p.price}</span>
+<p className="text-sm text-ink/60 mt-1">{p.uni} · {p.carrera}</p><p className="text-sm text-ink/80 flex flex-wrap items-center gap-x-1">{p.ownerName} · <RepLine r={r}/></p>{r.trusted&&<div className="mt-1"><Trusted/></div>}{p._pending&&<p className="text-xs text-guinda mt-1">Guardando en la base de datos…</p>}</div></button>};
+const Empty=({t,d,b,f})=><div className="bg-white border border-linea rounded-2xl p-10 text-center"><p className="font-display text-2xl mb-1">{t}</p><p className="text-ink/60 mb-4">{d}</p>{b&&<button onClick={f} className="bg-guinda text-white rounded-full px-5 py-2">{b}</button>}</div>;
+
+function App(){
+const [view,setView]=useState('home');const [items,setItems]=useState([]);const [reviews,setReviews]=useState([]);const [sales,setSales]=useState([]);const [dbErr,setDbErr]=useState('');
+const [user,setUser]=useState(null);const [profile,setProfile]=useState({});const [orders,setOrders]=useState([]);const [profId,setProfId]=useState('');
+const [q,setQ]=useState('');const [unis,setUnis]=useState([]);const [car,setCar]=useState('');const [cat,setCat]=useState('');const [max,setMax]=useState(500);const [sort,setSort]=useState('new');const [fOpen,setFOpen]=useState(false);
+const [sel,setSel]=useState(null);const [co,setCo]=useState(null);const [zoom,setZoom]=useState(null);const [toast,setToast]=useState('');const [heroQ,setHeroQ]=useState('');
+const shout=(m,ms)=>{setToast(m);clearTimeout(window.__tt);window.__tt=setTimeout(()=>setToast(''),ms||Math.max(3000,m.length*55))};
+const go=v=>{setView(v);setFOpen(false);window.scrollTo(0,0)};
+useEffect(()=>db.collection('products').orderBy('createdAt','desc').onSnapshot({includeMetadataChanges:true},s=>{setItems(s.docs.map(d=>({id:d.id,_pending:d.metadata.hasPendingWrites,...d.data()})))},e=>setDbErr(e.code||'error')),[]);
+useEffect(()=>db.collection('reviews').onSnapshot(s=>setReviews(s.docs.map(d=>({id:d.id,...d.data()}))),()=>{}),[]);
+useEffect(()=>db.collection('sales').onSnapshot(s=>setSales(s.docs.map(d=>({id:d.id,...d.data()}))),()=>{}),[]);
+useEffect(()=>{let ok=false;const t=setTimeout(()=>{if(!ok)setDbErr('timeout')},8000);db.collection('products').limit(1).get({source:'server'}).then(()=>{ok=true;clearTimeout(t);setDbErr('')}).catch(e=>{ok=true;clearTimeout(t);setDbErr(e.code||'error')});return()=>clearTimeout(t)},[]);
+/* onIdTokenChanged (y no onAuthStateChanged) para que la verificación del correo se refleje sin recargar */
+useEffect(()=>firebase.auth().onIdTokenChanged(u=>{if(!u){setUser(null);return}const uni=UNIDOM[domOf(u.email)];
+setUser({uid:u.uid,name:u.displayName||'Estudiante',photo:u.photoURL,email:u.email||'',verified:!!(u.emailVerified&&uni),uni:u.emailVerified&&uni?uni:''})}),[]);
+useEffect(()=>{if(!user){setProfile({});return}const ref=db.collection('users').doc(user.uid);
+ref.get().then(d=>{if(!d.exists)ref.set({name:user.name,photo:user.photo||'',inst:false}).catch(()=>{})}).catch(()=>{});return ref.onSnapshot(d=>setProfile(d.data()||{}),()=>{})},[user&&user.uid]);
+useEffect(()=>{if(user&&user.verified&&(profile.inst!==true||profile.uni!==user.uni))db.collection('users').doc(user.uid).set({inst:true,uni:user.uni},{merge:true}).catch(()=>{})},[user&&user.verified,user&&user.uni,profile.inst,profile.uni]);
+useEffect(()=>{if(!user){setOrders([]);return}const a={};const push=s=>{s.docs.forEach(d=>a[d.id]={id:d.id,...d.data()});setOrders(Object.values(a).sort((x,y)=>((y.createdAt||{}).seconds||9e9)-((x.createdAt||{}).seconds||9e9)))};
+const l1=db.collection('orders').where('buyerId','==',user.uid).onSnapshot(push,()=>{});const l2=db.collection('orders').where('sellerId','==',user.uid).onSnapshot(push,()=>{});return()=>{l1();l2()}},[user&&user.uid]);
+const login=async()=>{if(inApp){shout('Google no permite iniciar sesión dentro de Instagram, Facebook o TikTok. Abre Relevo en Chrome o Safari (menú de la app, "Abrir en el navegador").',8000);return}
+const pv=new firebase.auth.GoogleAuthProvider();pv.setCustomParameters({prompt:'select_account'});
+try{await firebase.auth().signInWithPopup(pv)}catch(e){if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request')return;
+const M={'auth/unauthorized-domain':'Este dominio no está autorizado en Firebase. Agrégalo en Authentication, Configuración, Dominios autorizados.','auth/operation-not-allowed':'El acceso con Google no está activado en Firebase (Authentication, Método de acceso, Google).','auth/popup-blocked':'El navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio e intenta de nuevo.','auth/network-request-failed':'No hay conexión a internet. Intenta de nuevo.','auth/internal-error':'Error de Google. Si abriste el enlace dentro de una app, ábrelo en Chrome o Safari.'};
+shout(M[e.code]||'No se pudo iniciar sesión ('+(e.code||'error')+').',8000)}};
+const me=user&&{...user,name:profile.name||user.name};
+const REP=useMemo(()=>{const m={};const g=id=>m[id]||(m[id]={n:0,sum:0,match:0,onTime:0,ventas:0});
+reviews.forEach(r=>{const x=g(r.sellerId);x.n++;x.sum+=r.stars;if(r.match)x.match++;if(r.onTime)x.onTime++});sales.forEach(s=>g(s.sellerId).ventas++);
+Object.values(m).forEach(x=>{x.avg=x.n?x.sum/x.n:0;x.score=(RC*RM+x.sum)/(RC+x.n);x.matchR=x.n?x.match/x.n:null;x.onTimeR=x.n?x.onTime/x.n:null;x.trusted=x.ventas>=3&&x.n>=3&&x.score>=4.5&&x.matchR>=.9});return m},[reviews,sales]);
+const rep=id=>REP[id]||EMPTYREP;
+const active=items.filter(p=>p.status!=='vendido'&&p.status!=='reservado');
+const L={unis:uniq(UNIS0,items.map(p=>p.uni)),carr:uniq(CARR0,items.map(p=>p.carrera)),curs:uniq(CURS0,items.map(p=>p.course))};
+const list=useMemo(()=>{const t=q.trim().toLowerCase();const a=active.filter(p=>(!t||[p.title,p.course,p.carrera,p.cat,p.uni,p.desc].join(' ').toLowerCase().includes(t))&&(!unis.length||unis.includes(p.uni))&&(!car||p.carrera===car)&&(!cat||p.cat===cat)&&p.price<=max);
+if(sort==='rep')a.sort((x,y)=>(rep(y.ownerId).score-rep(x.ownerId).score)||(rep(y.ownerId).ventas-rep(x.ownerId).ventas));else if(sort==='price')a.sort((x,y)=>x.price-y.price);return a},[items,q,unis,car,cat,max,sort,REP]);
+const clear=()=>{setQ('');setUnis([]);setCar('');setCat('');setMax(500)};
+const openProf=id=>{setSel(null);setCo(null);setProfId(id);go('profile')};
+const coordinate=()=>{if(!user){login();return}if(!me.verified){setSel(null);go('verify');return}setCo({step:1,pt:'',m:'',h:''})};
+const pend=orders.filter(o=>o.status==='pendiente').length;
+const nav=[['home','Inicio'],['explore','Explorar'],['sell','Vender'],...(user?[['orders','Pedidos'+(pend?` (${pend})`:'')]]:[]),...(user&&!user.verified?[['verify','Verificar correo']]:[])];
+const sr=sel&&rep(sel.ownerId);
+
+return <div className="min-h-screen">
+<header className="sticky top-0 z-30 bg-bruma/90 backdrop-blur border-b border-linea"><div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+<button onClick={()=>go('home')} aria-label="Ir al inicio"><Logo/></button>
+<nav className="flex items-center gap-1 order-3 sm:order-2 w-full sm:w-auto overflow-x-auto">{nav.map(([k,l])=><button key={k} onClick={()=>go(k)} className={`px-3 py-2 rounded-full text-sm whitespace-nowrap ${view===k?'bg-ink text-white':k==='verify'?'text-guinda border border-guinda':'hover:bg-white'}`}>{l}</button>)}</nav>
+<div className="flex items-center gap-2 text-sm order-2 sm:order-3">{user?<><button onClick={()=>openProf(user.uid)} className="flex items-center gap-2 rounded-full hover:bg-white pr-3" aria-label="Mi perfil">{user.photo?<img src={user.photo} alt="" referrerPolicy="no-referrer" className="w-9 h-9 rounded-full"/>:<span className="w-9 h-9 rounded-full bg-guinda text-white flex items-center justify-center"><I n="user" s={18}/></span>}<span className="hidden sm:inline max-w-[8rem] truncate">{me.name.split(' ')[0]}</span></button><button onClick={()=>{firebase.auth().signOut();go('home')}} className="px-3 py-2 rounded-full border border-linea hover:bg-white">Salir</button></>:<button onClick={login} className="px-4 py-2 rounded-full bg-guinda text-white flex items-center gap-2"><I n="user" s={16}/>Ingresar</button>}</div></div></header>
+
+{dbErr&&<div role="alert" className="bg-guinda text-white text-sm text-center px-4 py-2">{dbErr==='permission-denied'?'Las reglas de Firestore no permiten leer ni guardar. Pega y publica las reglas en Firebase, Firestore, Reglas.':dbErr==='timeout'||dbErr==='unavailable'||dbErr==='not-found'?'No hay conexión con la base de datos. Crea Firestore en Firebase (Firestore Database, Crear base de datos) y recarga. Mientras tanto, lo que publiques NO se guarda.':'No se pudo conectar con la base de datos ('+dbErr+').'}</div>}
+
+{view==='home'&&<main>
+<section className="max-w-6xl mx-auto px-4 pt-14 pb-12 grid lg:grid-cols-5 gap-10 items-center">
+<div className="lg:col-span-3"><h1 className="font-display text-5xl md:text-7xl leading-[1.02] tracking-tight">Lo que ya usaste, <br/>le sirve a quien sigue.</h1>
+<p className="mt-5 text-lg text-ink/70 max-w-xl">Compra y vende libros, maquetas, calculadoras y apuntes con estudiantes verificados de tu universidad. Revisas el material en un punto público cerca del campus y recién pagas.</p>
+<form onSubmit={e=>{e.preventDefault();setQ(heroQ);go('explore')}} className="mt-7 flex gap-2 bg-white border border-linea rounded-full p-1.5 max-w-xl">
+<label className="flex items-center gap-2 flex-1 pl-4"><I n="search" c="text-ink/50"/><input value={heroQ} onChange={e=>setHeroQ(e.target.value)} placeholder="Busca por curso, carrera o material" className="w-full bg-transparent outline-none py-2"/></label>
+<button className="bg-guinda text-white rounded-full px-6 py-2.5 font-medium">Buscar</button></form></div>
+<div className="lg:col-span-2 bg-white border border-linea rounded-3xl p-6 space-y-4">
+{[['shield','Solo estudiantes verificados','Para vender o coordinar una entrega hay que verificar el correo de la universidad.'],['star','Reseñas de compras reales','Solo califica quien recibió el material y cerró la entrega con su código.'],['pin','Entrega en un punto público','Cerca de tu campus, con gente y vigilancia. Pagas después de revisar el material.']].map(([i,t,d])=><div key={t} className="flex gap-3"><span className="w-10 h-10 shrink-0 rounded-full bg-bruma flex items-center justify-center text-guinda"><I n={i}/></span><div><p className="font-medium">{t}</p><p className="text-sm text-ink/60">{d}</p></div></div>)}</div></section>
+<section className="max-w-6xl mx-auto px-4 py-8"><h2 className="font-display text-3xl mb-5">Categorías</h2>
+<div className="grid grid-cols-2 md:grid-cols-5 gap-3">{CATS.map(c=><button key={c.id} onClick={()=>{clear();setCat(c.id);go('explore')}} className="bg-white border border-linea rounded-2xl p-4 text-left hover:border-guinda"><span className="w-11 h-11 rounded-xl flex items-center justify-center mb-6" style={{background:c.tone}}><I n={c.icon}/></span><span className="text-sm font-medium">{c.label}</span></button>)}</div></section>
+<section className="max-w-6xl mx-auto px-4 py-8 pb-16"><div className="flex items-end justify-between mb-5"><h2 className="font-display text-3xl">Recién publicados</h2><button onClick={()=>{clear();go('explore')}} className="text-sm text-guinda underline underline-offset-4">Ver todo</button></div>
+{active.length?<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{active.slice(0,6).map(p=><Card key={p.id} p={p} open={setSel} rep={rep}/>)}</div>:<Empty t="Aún no hay publicaciones" d="Sé la primera persona en publicar un material en Relevo." b="Publicar un material" f={()=>go('sell')}/>}</section></main>}
+
+{view==='explore'&&<main className="max-w-6xl mx-auto px-4 py-8">
+<h1 className="font-display text-4xl mb-5">Explorar materiales</h1>
+<div className="flex gap-2 mb-6"><label className="flex items-center gap-2 flex-1 bg-white border border-linea rounded-full px-4"><I n="search" c="text-ink/50"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Busca por curso, carrera o material" className="w-full bg-transparent outline-none py-3"/></label>
+<button onClick={()=>setFOpen(!fOpen)} className="lg:hidden flex items-center gap-2 px-4 rounded-full border border-linea bg-white"><I n="filter" s={16}/>Filtros</button></div>
+<div className="grid lg:grid-cols-4 gap-6">
+<aside className={`${fOpen?'block':'hidden'} lg:block bg-white border border-linea rounded-2xl p-5 h-fit space-y-6`}>
+<fieldset><legend className="font-medium mb-2">Universidad</legend>{L.unis.map(u=><label key={u} className="flex items-center gap-2 py-1 text-sm"><input type="checkbox" className="accent-[#6B1A2F]" checked={unis.includes(u)} onChange={()=>setUnis(unis.includes(u)?unis.filter(x=>x!==u):[...unis,u])}/>{u}</label>)}</fieldset>
+<label className="block"><span className="font-medium block mb-2">Carrera</span><select value={car} onChange={e=>setCar(e.target.value)} className="w-full border border-linea rounded-xl p-2 text-sm bg-white"><option value="">Todas</option>{L.carr.map(c=><option key={c}>{c}</option>)}</select></label>
+<label className="block"><span className="font-medium block mb-2">Tipo de material</span><select value={cat} onChange={e=>setCat(e.target.value)} className="w-full border border-linea rounded-xl p-2 text-sm bg-white"><option value="">Todos</option>{CATS.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+<label className="block"><span className="font-medium flex justify-between mb-2">Precio máximo<span className="font-normal">S/ {max}</span></span><input type="range" min="10" max="500" step="10" value={max} onChange={e=>setMax(+e.target.value)} className="w-full accent-[#6B1A2F]"/></label>
+<button onClick={clear} className="text-sm text-guinda underline underline-offset-4">Quitar filtros</button></aside>
+<section className="lg:col-span-3"><div className="flex items-center justify-between gap-3 mb-3 flex-wrap"><p className="text-sm text-ink/60">{list.length} {list.length===1?'resultado':'resultados'}</p>
+<label className="text-sm flex items-center gap-2">Ordenar<select value={sort} onChange={e=>setSort(e.target.value)} className="border border-linea rounded-full px-3 py-1.5 bg-white"><option value="new">Más recientes</option><option value="rep">Mejor reputación</option><option value="price">Menor precio</option></select></label></div>
+{list.length?<div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">{list.map(p=><Card key={p.id} p={p} open={setSel} rep={rep}/>)}</div>:<Empty t="No hay materiales con esos filtros" d="Prueba con otro curso o quita algún filtro." b="Quitar filtros" f={clear}/>}</section></div></main>}
+
+{view==='sell'&&(!user?<Gate login={login} t="Únete a Relevo" d="Ingresa con tu cuenta de Google para publicar materiales."/>:!me.verified?<Verify me={me} go={go} shout={shout} why="vender"/>:<Sell me={me} profile={profile} L={L} items={items} open={setSel} go={go} shout={shout}/>)}
+{view==='verify'&&(!user?<Gate login={login} t="Verifica tu correo" d="Primero ingresa con tu cuenta de Google."/>:<Verify me={me} go={go} shout={shout} why="comprar y vender"/>)}
+{view==='orders'&&(!user?<Gate login={login} t="Tus pedidos" d="Ingresa para ver tus compras y ventas."/>:<Orders me={me} orders={orders} reviews={reviews} shout={shout}/>)}
+{view==='profile'&&(!user&&profId===''?<Gate login={login} t="Tu perfil" d="Ingresa para ver tu perfil."/>:<Profile key={profId} uid={profId} me={me} profile={profile} items={items} rep={rep} reviews={reviews} open={setSel} go={go} shout={shout}/>)}
+
+<footer className="border-t border-linea py-8 text-center text-sm text-ink/60"><Logo size="text-2xl"/><p className="mt-2">Relevo · Prototipo universitario</p></footer>
+
+{sel&&!co&&<Modal close={()=>setSel(null)} title="Detalle del material"><Gallery key={sel.id} p={sel} zoom={(ph,i)=>setZoom({ph,i})}/>
+<h2 className="font-display text-3xl mt-4 leading-tight">{sel.title}</h2>
+<p className="font-display text-3xl text-guinda mt-1">S/ {sel.price}</p>
+{sel.newPrice>sel.price&&<p className="text-sm text-ink/60">Nuevo cuesta aprox. S/ {sel.newPrice}: ahorras {pct(1-sel.price/sel.newPrice)}</p>}
+{sel.desc&&<p className="text-ink/70 mt-2">{sel.desc}</p>}
+<dl className="grid grid-cols-2 gap-3 text-sm mt-4">{[['Estado real',sel.cond],['Curso',sel.course],['Ciclo',sel.ciclo],['Universidad',sel.uni],['Carrera',sel.carrera],['Tipo',sel.cat]].map(([k,v])=><div key={k} className="bg-bruma rounded-xl p-3"><dt className="text-ink/60">{k}</dt><dd className="font-medium">{v}</dd></div>)}</dl>
+{ESTADOS[sel.cond]&&<p className="text-sm text-ink/60 mt-2"><b className="font-medium text-ink/80">{sel.cond}:</b> {ESTADOS[sel.cond]}</p>}
+<button onClick={()=>openProf(sel.ownerId)} className="w-full text-left border border-linea rounded-2xl p-4 mt-4 flex items-center gap-3 hover:border-guinda"><span className="w-11 h-11 shrink-0 rounded-full bg-guinda text-white flex items-center justify-center"><I n="user"/></span><span className="flex-1 min-w-0"><span className="font-medium block">{sel.ownerName}</span><Badge inst={sel.ownerInst} uni={sel.uni}/><span className="block text-sm mt-0.5"><RepLine r={sr}/></span>{sr.n>0&&<span className="block text-sm text-ink/60">{pct(sr.matchR)} dice que el material coincidió con lo publicado</span>}{sr.trusted&&<span className="block mt-1"><Trusted/></span>}</span><span className="text-sm text-guinda underline underline-offset-4 shrink-0">Ver perfil</span></button>
+{user&&sel.ownerId===user.uid?<p className="mt-5 text-center text-ink/60">Esta es tu publicación.</p>:(sel.status==='vendido'||sel.status==='reservado')?<p className="mt-5 text-center text-ink/60">{sel.status==='vendido'?'Este material ya fue vendido.':'Este material ya fue reservado por otra persona.'}</p>:<button onClick={coordinate} className="w-full mt-5 bg-guinda text-white rounded-full py-3 font-medium flex items-center justify-center gap-2"><I n={!user?'lock':!me.verified?'mail':'pin'} s={18}/>{!user?'Ingresa para coordinar':!me.verified?'Verifica tu correo para coordinar':'Coordinar entrega'}</button>}</Modal>}
+
+{sel&&co&&<Checkout sel={sel} co={co} setCo={setCo} me={me} close={()=>{setCo(null);setSel(null)}} go={go} shout={shout}/>}
+{zoom&&<Viewer ph={zoom.ph} start={zoom.i} close={()=>setZoom(null)}/>}
+{toast&&<div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-auto max-w-md bg-ink text-white rounded-2xl px-5 py-3 text-sm z-[70] flex items-center gap-2"><I n="check" s={16} c="shrink-0"/>{toast}</div>}
+</div>}
+
+function Modal({title,close,children}){return <div className="fixed inset-0 z-40 bg-ink/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={close}><div role="dialog" aria-modal="true" aria-label={title} onClick={e=>e.stopPropagation()} className="bg-white w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5"><div className="flex justify-between items-center mb-3"><span className="text-sm text-ink/60">{title}</span><button onClick={close} aria-label="Cerrar" className="w-9 h-9 rounded-full hover:bg-bruma flex items-center justify-center"><I n="x"/></button></div>{children}</div></div>}
+function Viewer({ph,start,close}){const n=ph.length;const [i,setI]=useState(start);const [tx,setTx]=useState(null);
+const prev=()=>setI(x=>(x-1+n)%n),next=()=>setI(x=>(x+1)%n);
+useEffect(()=>{const k=e=>{if(e.key==='Escape')close();else if(e.key==='ArrowLeft')prev();else if(e.key==='ArrowRight')next()};window.addEventListener('keydown',k);const o=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{window.removeEventListener('keydown',k);document.body.style.overflow=o}},[n]);
+const nb="absolute top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center";
+return <div role="dialog" aria-modal="true" aria-label="Fotos del material" className="fixed inset-0 z-[60] bg-black/95 flex flex-col" onClick={close}>
+<div className="flex justify-between items-center p-4 text-white"><span className="text-sm">{i+1} / {n}</span><button onClick={close} aria-label="Cerrar fotos" className="w-10 h-10 rounded-full hover:bg-white/15 flex items-center justify-center"><I n="x"/></button></div>
+<div className="relative flex-1 flex items-center justify-center px-4 pb-4" onTouchStart={e=>setTx(e.touches[0].clientX)} onTouchEnd={e=>{if(tx===null)return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>40)(d>0?prev:next)();setTx(null)}}>
+<img src={ph[i]} alt={`Foto ${i+1} de ${n}`} onClick={e=>e.stopPropagation()} draggable="false" className="max-w-full max-h-[75vh] object-contain rounded-lg select-none"/>
+{n>1&&<><button onClick={e=>{e.stopPropagation();prev()}} aria-label="Foto anterior" className={nb+' left-3'}><I n="left"/></button><button onClick={e=>{e.stopPropagation();next()}} aria-label="Foto siguiente" className={nb+' right-3'}><I n="right"/></button></>}</div>
+{n>1&&<div className="flex justify-center gap-2 p-3 overflow-x-auto" onClick={e=>e.stopPropagation()}>{ph.map((s,k)=><button key={k} onClick={()=>setI(k)} aria-label={`Ver foto ${k+1}`} className={`w-12 h-12 shrink-0 rounded-md overflow-hidden border-2 ${k===i?'border-white':'border-transparent opacity-50'}`}><img src={s} alt="" className="w-full h-full object-cover"/></button>)}</div>}</div>}
+function Gate({login,t,d}){return <main className="max-w-md mx-auto px-4 py-20 text-center"><span className="w-14 h-14 mx-auto rounded-full bg-guinda text-white flex items-center justify-center"><I n="lock" s={26}/></span><h1 className="font-display text-4xl mt-5">{t}</h1><p className="text-ink/70 mt-2">{d}</p><button onClick={login} className="mt-6 bg-guinda text-white rounded-full px-6 py-3 font-medium">Continuar con Google</button></main>}
+
+/* Flujo de verificación: ingresa con Google -> escribe su correo universitario -> Firebase le envía un enlace
+   (verifyBeforeUpdateEmail) -> al abrirlo, el correo de la cuenta pasa a ser el institucional y queda verificado.
+   Si su cuenta de Google ya es institucional y verificada (por ejemplo PUCP), queda verificado al instante. */
+function Verify({me,go,shout,why}){
+const PK='rlv-pend';const mem=()=>{try{return localStorage.getItem(PK)||''}catch(e){return ''}};const remember=v=>{try{v?localStorage.setItem(PK,v):localStorage.removeItem(PK)}catch(e){}};
+const [email,setEmail]=useState('');const [sent,setSent]=useState(mem);const [busy,setBusy]=useState(false);const [err,setErr]=useState('');const [cool,setCool]=useState(0);
+useEffect(()=>{if(!cool)return;const t=setTimeout(()=>setCool(c=>c-1),1000);return()=>clearTimeout(t)},[cool]);
+const check=async quiet=>{const u=firebase.auth().currentUser;if(!u)return;if(!quiet){setBusy(true);setErr('')}
+try{await u.reload();const v=firebase.auth().currentUser;if(v.emailVerified&&UNIDOM[domOf(v.email)]){await v.getIdToken(true);remember('');setSent('');shout('Correo verificado: ya puedes comprar y vender')}else if(!quiet)setErr('Aún no aparece confirmado. Abre el enlace del correo (revisa también Correo no deseado) y vuelve a tocar el botón.')}
+catch(e){if(['auth/user-token-expired','auth/requires-recent-login','auth/user-not-found'].includes(e.code)){remember('');await firebase.auth().signOut();shout('Tu correo ya se verificó. Vuelve a ingresar con Google para continuar.',8000)}else if(!quiet)setErr('No se pudo comprobar ('+(e.code||'error')+').')}
+if(!quiet)setBusy(false)};
+useEffect(()=>{if(me.verified||!sent)return;check(true);const f=()=>{if(document.visibilityState==='visible')check(true)};document.addEventListener('visibilitychange',f);return()=>document.removeEventListener('visibilitychange',f)},[sent,me.verified]);
+const send=async addr=>{const a=(addr||email).trim().toLowerCase();if(!UNIDOM[domOf(a)]){setErr('Ese correo no es de una universidad del piloto. Usa tu correo universitario, por ejemplo u2023...@upc.edu.pe.');return}
+setErr('');setBusy(true);const u=firebase.auth().currentUser;const run=()=>u.verifyBeforeUpdateEmail(a,{url:location.origin+location.pathname});
+try{try{await run()}catch(e){if(e.code==='auth/requires-recent-login'){await u.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());await run()}else throw e}
+setSent(a);remember(a);setCool(60);shout('Te enviamos el enlace a '+a)}
+catch(e){setErr({'auth/email-already-in-use':'Ese correo ya está vinculado a otra cuenta de Relevo.','auth/invalid-email':'El correo no es válido.','auth/too-many-requests':'Demasiados intentos. Espera unos minutos.','auth/operation-not-allowed':'Falta activar el proveedor "Correo electrónico/contraseña" en Firebase (Authentication, Método de acceso).','auth/unauthorized-continue-uri':'Falta autorizar este dominio en Firebase (Authentication, Configuración, Dominios autorizados).'}[e.code]||'No se pudo enviar el correo ('+(e.code||'error')+').')}
+setBusy(false)};
+if(me.verified)return <main className="max-w-md mx-auto px-4 py-16 text-center"><span className="w-14 h-14 mx-auto rounded-full bg-guinda text-white flex items-center justify-center"><I n="shield" s={26}/></span><h1 className="font-display text-4xl mt-5">Correo verificado</h1><p className="text-ink/70 mt-2">Tu perfil muestra que eres de {me.uni}. Tu correo no se muestra a nadie.</p><div className="mt-6 flex gap-2 justify-center"><button onClick={()=>go('sell')} className="bg-guinda text-white rounded-full px-5 py-2.5">Publicar</button><button onClick={()=>go('explore')} className="border border-linea rounded-full px-5 py-2.5 bg-white">Explorar</button></div></main>;
+const inp="w-full border border-linea rounded-xl p-3 bg-white";
+return <main className="max-w-md mx-auto px-4 py-12"><div className="bg-white border border-linea rounded-3xl p-6">
+<span className="w-12 h-12 rounded-full bg-guinda text-white flex items-center justify-center"><I n="mail" s={22}/></span>
+<h1 className="font-display text-4xl mt-4 leading-tight">Verifica tu correo universitario</h1>
+<p className="text-ink/70 mt-2">Para {why} en Relevo necesitamos confirmar que eres estudiante. Así quien te compra o te vende sabe con quién se encuentra.</p>
+{!sent?<div className="mt-5 space-y-3">
+<label className="block"><span className="font-medium block mb-1">Correo de tu universidad</span><input type="email" inputMode="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')send()}} placeholder="u2023xxxxx@upc.edu.pe" className={inp}/></label>
+{err&&<p className="text-sm text-guinda" role="alert">{err}</p>}
+<button disabled={busy||!email.includes('@')} onClick={()=>send()} className="w-full bg-guinda text-white rounded-full py-3 font-medium disabled:opacity-40">{busy?'Enviando...':'Enviar enlace de verificación'}</button>
+<p className="text-xs text-ink/50">Universidades del piloto: {UNIS0.join(', ')}. No publicamos tu correo: en tu perfil solo aparece la universidad.</p></div>
+:<div className="mt-5 space-y-3">
+<div className="bg-bruma rounded-2xl p-4 text-sm"><p>Te enviamos un enlace a <b>{sent}</b>.</p><ol className="list-decimal pl-5 mt-2 space-y-1 text-ink/70"><li>Abre el correo (revisa también Correo no deseado).</li><li>Toca el enlace para confirmar.</li><li>Vuelve aquí y toca el botón.</li></ol></div>
+{err&&<p className="text-sm text-guinda" role="alert">{err}</p>}
+<button disabled={busy} onClick={()=>check(false)} className="w-full bg-guinda text-white rounded-full py-3 font-medium disabled:opacity-40">{busy?'Comprobando...':'Ya lo verifiqué'}</button>
+<div className="flex justify-between text-sm"><button disabled={cool>0||busy} onClick={()=>send(sent)} className="text-guinda underline underline-offset-4 disabled:opacity-40 disabled:no-underline">{cool>0?`Reenviar en ${cool} s`:'Reenviar enlace'}</button><button onClick={()=>{setSent('');remember('');setErr('')}} className="text-ink/60 underline underline-offset-4">Usar otro correo</button></div></div>}
+</div></main>}
+
+function Checkout({sel,co,setCo,me,close,go,shout}){
+const [busy,setBusy]=useState(false);
+/* El código de entrega se guarda en una subcolección que solo el comprador puede leer.
+   El vendedor solo puede cerrar la venta escribiendo el código correcto (lo validan las reglas). */
+const confirm=async()=>{setBusy(true);const code=genCode();
+try{await db.runTransaction(async tx=>{const pr=db.collection('products').doc(sel.id);const ps=await tx.get(pr);if(!ps.exists||ps.data().status!=='activo')throw new Error('taken');const or=db.collection('orders').doc();
+tx.update(pr,{status:'reservado',orderId:or.id});
+tx.set(or,{productId:sel.id,title:sel.title,price:sel.price,uni:sel.uni,sellerId:sel.ownerId,sellerName:sel.ownerName,buyerId:me.uid,buyerName:me.name,point:co.pt,method:co.m,hour:co.h,status:'pendiente',createdAt:TS()});
+tx.set(or.collection('private').doc('code'),{code})});setCo({...co,step:2,code})}
+catch(e){if(e.message==='taken'){shout('Otra persona ya reservó este material');close()}else shout(e.code==='permission-denied'?'No se pudo reservar: verifica tu correo universitario.':'No se pudo crear el pedido. Intenta de nuevo')}setBusy(false)};
+return <Modal close={close} title="Coordinar entrega">
+{co.step===1?<div className="space-y-5">
+<p className="text-sm text-ink/70">{sel.title} · <b>S/ {sel.price}</b> · {sel.ownerName}</p>
+<div><p className="font-medium mb-1">Punto de encuentro cerca de {sel.uni}</p><p className="text-sm text-ink/60 mb-2">Siempre en un lugar público: no se hacen intercambios dentro del campus.</p><div className="space-y-2">{PTS.map(([n,d])=><button key={n} onClick={()=>setCo({...co,pt:n})} className={`w-full text-left border rounded-xl p-3 flex items-center gap-3 ${co.pt===n?'border-guinda bg-guinda/5':'border-linea'}`}><I n="pin" c="text-guinda shrink-0"/><span><span className="font-medium block">{n}</span><span className="text-sm text-ink/60">{d}</span></span></button>)}</div></div>
+<div><p className="font-medium mb-2">Forma de pago</p><div className="grid grid-cols-2 gap-2">{['Efectivo al recibir','Yape o Plin al recibir'].map(m=><button key={m} onClick={()=>setCo({...co,m})} className={`border rounded-xl p-3 text-sm ${co.m===m?'border-guinda bg-guinda/5':'border-linea'}`}>{m}</button>)}</div><p className="text-xs text-ink/50 mt-2">En ambos casos pagas recién después de revisar el material.</p></div>
+<label className="block"><span className="font-medium block mb-2">Horario</span><select value={co.h} onChange={e=>setCo({...co,h:e.target.value})} className="w-full border border-linea rounded-xl p-3 bg-white"><option value="">Elige un horario</option>{['10:00 a. m.','1:00 p. m.','4:00 p. m.'].map(h=><option key={h}>{h}</option>)}</select></label>
+<button disabled={!co.pt||!co.m||!co.h||busy} onClick={confirm} className="w-full bg-guinda text-white rounded-full py-3 font-medium disabled:opacity-40 flex items-center justify-center gap-2"><I n="lock" s={18}/>{busy?'Confirmando...':'Confirmar encuentro'}</button></div>
+:<div className="text-center py-4"><span className="w-14 h-14 mx-auto rounded-full bg-guinda text-white flex items-center justify-center"><I n="check" s={28}/></span>
+<h2 className="font-display text-3xl mt-4">Encuentro confirmado</h2>
+<p className="text-ink/70 mt-2">{co.pt}, cerca de {sel.uni}, a las {co.h}. Revisa el material y recién paga.</p>
+<div className="bg-bruma rounded-2xl p-4 mt-5"><p className="text-sm text-ink/60">Tu código de entrega</p><p className="font-display text-4xl tracking-[0.3em]">{co.code}</p><p className="text-sm text-ink/60 mt-1">Dáselo a {sel.ownerName} solo después de revisar el material y pagar. Con él se cierra la venta y podrás calificarlo.</p></div>
+<button onClick={()=>{close();go('orders')}} className="mt-5 bg-guinda text-white rounded-full px-6 py-2.5">Ver mis pedidos</button></div>}</Modal>}
+
+function BuyCode({oid}){const [c,setC]=useState('');useEffect(()=>db.collection('orders').doc(oid).collection('private').doc('code').onSnapshot(d=>setC(d.exists?d.data().code:'No disponible'),()=>setC('No disponible')),[oid]);return <p className="font-display text-3xl tracking-[0.3em]">{c||'...'}</p>}
+
+function ReviewForm({o,me,shout}){
+const [s,setS]=useState(0);const [m,setM]=useState(null);const [t,setT]=useState(null);const [c,setC]=useState('');const [busy,setBusy]=useState(false);
+const ok=s>0&&m!==null&&t!==null;
+const send=async()=>{setBusy(true);try{await db.collection('reviews').doc(o.id).set({sellerId:o.sellerId,buyerId:me.uid,buyerName:me.name.split(' ')[0],title:o.title,stars:s,match:m,onTime:t,comment:norm(c).slice(0,280),createdAt:TS()});shout('Gracias: tu reseña ya aparece en el perfil del vendedor')}catch(e){shout(e.code==='permission-denied'?'Este pedido ya no se puede calificar.':'No se pudo enviar la reseña')}setBusy(false)};
+const YN=({q,v,f})=><div><p className="text-sm mb-1">{q}</p><div className="flex gap-2">{[['Sí',true],['No',false]].map(([l,b])=><button key={l} type="button" onClick={()=>f(b)} className={`px-4 py-1.5 rounded-full border text-sm ${v===b?'border-guinda bg-guinda/5 font-medium':'border-linea bg-white'}`}>{l}</button>)}</div></div>;
+return <div className="mt-3 bg-bruma rounded-xl p-4 space-y-3"><p className="font-medium">Califica a {o.sellerName}</p>
+<div className="flex gap-1" role="radiogroup" aria-label="Calificación de 1 a 5">{[1,2,3,4,5].map(k=><button key={k} type="button" role="radio" aria-checked={s===k} aria-label={`${k} de 5`} onClick={()=>setS(k)} className={k<=s?'text-guinda':'text-ink/25'}><I n="star" s={28} f={k<=s}/></button>)}</div>
+<YN q="¿El material coincidió con las fotos y el estado publicado?" v={m} f={setM}/>
+<YN q="¿Llegó a tiempo al punto de encuentro?" v={t} f={setT}/>
+<textarea value={c} onChange={e=>setC(e.target.value.slice(0,280))} rows="2" placeholder="Comentario opcional: cómo fue la entrega, el estado del material..." className="w-full border border-linea rounded-xl p-3 bg-white text-sm"/>
+<div className="flex justify-between items-center"><span className="text-xs text-ink/50">{c.length}/280</span><button disabled={!ok||busy} onClick={send} className="bg-guinda text-white rounded-full px-5 py-2 disabled:opacity-40">{busy?'Enviando...':'Publicar reseña'}</button></div></div>}
+
+function Orders({me,orders,reviews,shout}){
+const [codes,setCodes]=useState({});
+const buys=orders.filter(o=>o.buyerId===me.uid),sells=orders.filter(o=>o.sellerId===me.uid);
+const chip=s=><span className={`text-xs rounded-full px-2 py-0.5 border h-fit ${s==='completado'?'bg-guinda text-white border-guinda':s==='cancelado'?'text-ink/50 border-linea':'border-guinda text-guinda'}`}>{s}</span>;
+const cancel=async o=>{const upd={status:'cancelado',cancelledBy:me.uid};try{const b=db.batch();b.update(db.collection('orders').doc(o.id),upd);b.update(db.collection('products').doc(o.productId),{status:'activo'});await b.commit();shout('Pedido cancelado: el material vuelve a estar disponible')}catch(e){try{await db.collection('orders').doc(o.id).update(upd);shout('Pedido cancelado')}catch(x){shout('No se pudo cancelar')}}};
+const done=async o=>{const c=(codes[o.id]||'').replace(/[^a-z0-9]/gi,'').toUpperCase();if(c.length!==6){shout('El código tiene 6 caracteres. Pídelo al comprador');return}
+try{const b=db.batch();b.update(db.collection('orders').doc(o.id),{status:'completado',codeTry:c,completedAt:TS()});b.update(db.collection('products').doc(o.productId),{status:'vendido'});b.set(db.collection('sales').doc(o.id),{sellerId:me.uid,at:TS()});await b.commit();shout('Entrega confirmada: la venta ya suma a tu reputación')}
+catch(e){shout(e.code==='permission-denied'?'El código no coincide. Pídelo de nuevo al comprador':'No se pudo confirmar la entrega')}};
+const left=o=>o.completedAt&&o.completedAt.seconds?14-Math.floor((Date.now()/1000-o.completedAt.seconds)/86400):14;
+const where=o=><p className="text-sm mt-3 flex items-center gap-1"><I n="pin" s={15} c="text-guinda shrink-0"/>{o.point}, cerca de {o.uni} · {o.hour} · {o.method}</p>;
+return <main className="max-w-4xl mx-auto px-4 py-8 space-y-10">
+<section><h1 className="font-display text-4xl mb-4">Mis compras</h1>
+{buys.length?<div className="space-y-3">{buys.map(o=>{const rv=reviews.find(r=>r.id===o.id);return <div key={o.id} className="bg-white border border-linea rounded-2xl p-5"><div className="flex justify-between gap-3"><div><p className="font-medium">{o.title}</p><p className="text-sm text-ink/60">Vendedor: {o.sellerName} · S/ {o.price}</p></div>{chip(o.status)}</div>
+{where(o)}
+{o.status==='pendiente'&&<div className="mt-3 bg-bruma rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap"><div><p className="text-xs text-ink/60">Código de entrega (solo tú lo ves). Entrégalo después de revisar y pagar.</p><BuyCode oid={o.id}/></div><button onClick={()=>cancel(o)} className="text-sm border border-linea rounded-full px-4 py-2 hover:bg-white">Cancelar pedido</button></div>}
+{o.status==='completado'&&(rv?<p className="mt-3 text-sm flex items-center gap-2">Tu reseña: <Stars v={rv.stars} s={14}/></p>:left(o)>0?<ReviewForm o={o} me={me} shout={shout}/>:<p className="mt-3 text-sm text-ink/50">El plazo para calificar venció.</p>)}</div>})}</div>:<Empty t="Aún no compras nada" d="Cuando coordines una entrega, aparecerá aquí con tu código."/>}</section>
+<section><h2 className="font-display text-4xl mb-4">Mis ventas</h2>
+{sells.length?<div className="space-y-3">{sells.map(o=><div key={o.id} className="bg-white border border-linea rounded-2xl p-5"><div className="flex justify-between gap-3"><div><p className="font-medium">{o.title}</p><p className="text-sm text-ink/60">Comprador: {o.buyerName} · S/ {o.price}</p></div>{chip(o.status)}</div>
+{where(o)}
+{o.status==='pendiente'&&<><p className="text-sm text-ink/60 mt-3">Cuando el comprador revise el material y te pague, pídele su código de 6 caracteres.</p><div className="mt-2 flex gap-2 flex-wrap"><input value={codes[o.id]||''} onChange={e=>setCodes({...codes,[o.id]:e.target.value})} placeholder="Código del comprador" autoCapitalize="characters" className="border border-linea rounded-xl px-3 py-2 flex-1 min-w-[10rem] uppercase tracking-widest"/><button onClick={()=>done(o)} className="bg-guinda text-white rounded-full px-5 py-2">Confirmar entrega</button><button onClick={()=>cancel(o)} className="border border-linea rounded-full px-5 py-2 hover:bg-bruma">Rechazar</button></div></>}</div>)}</div>:<Empty t="Aún no tienes ventas" d="Cuando alguien coordine contigo, verás el pedido aquí."/>}</section></main>}
+
+function Profile({uid,me,profile,items,rep,reviews,open,go,shout}){
+const own=!!me&&uid===me.uid;const [pu,setPu]=useState(null);const [f,setF]=useState({name:'',carrera:'',ciclo:''});const [reply,setReply]=useState({});
+useEffect(()=>{if(own){setF({name:profile.name||me.name,carrera:profile.carrera||'',ciclo:profile.ciclo||''});return}db.collection('users').doc(uid).get().then(d=>setPu(d.exists?d.data():{name:'Estudiante'})).catch(()=>setPu({name:'Estudiante'}))},[uid]);
+const d=own?{...f,photo:me.photo,inst:me.verified,uni:me.verified?me.uni:''}:pu;
+if(!d)return <main className="max-w-4xl mx-auto px-4 py-16 text-center text-ink/60">Cargando perfil...</main>;
+const r=rep(uid);const rs=reviews.filter(x=>x.sellerId===uid).sort((a,b)=>((b.createdAt||{}).seconds||9e9)-((a.createdAt||{}).seconds||9e9));
+const mine=items.filter(p=>p.ownerId===uid&&(own||(p.status!=='vendido'&&p.status!=='reservado')));
+const save=async e=>{e.preventDefault();try{await db.collection('users').doc(uid).set({name:norm(f.name)||me.name,carrera:norm(f.carrera),ciclo:norm(f.ciclo),inst:!!me.verified,...(me.verified?{uni:me.uni}:{})},{merge:true});shout('Perfil guardado')}catch(x){shout('No se pudo guardar')}};
+const del=p=>{if(window.confirm('¿Eliminar esta publicación?'))db.collection('products').doc(p.id).delete().catch(()=>shout('No se pudo eliminar'))};
+const answer=async rv=>{const t=norm(reply[rv.id]).slice(0,280);if(!t)return;try{await db.collection('reviews').doc(rv.id).update({reply:t});shout('Respuesta publicada')}catch(e){shout('No se pudo responder')}};
+const inp="w-full border border-linea rounded-xl p-3 bg-white";
+const stat=(v,l)=><div className="bg-bruma rounded-xl p-3 text-center"><p className="font-display text-3xl leading-none">{v}</p><p className="text-xs text-ink/60 mt-1">{l}</p></div>;
+return <main className="max-w-4xl mx-auto px-4 py-8">
+<div className="bg-white border border-linea rounded-3xl p-6"><div className="flex items-center gap-4 flex-wrap">{d.photo?<img src={d.photo} alt="" referrerPolicy="no-referrer" className="w-20 h-20 rounded-full"/>:<span className="w-20 h-20 rounded-full bg-guinda text-white flex items-center justify-center"><I n="user" s={32}/></span>}
+<div className="flex-1 min-w-[12rem]"><h1 className="font-display text-4xl">{own?(profile.name||me.name):d.name}</h1><p className="text-ink/70">{[d.inst&&d.uni,d.carrera,d.ciclo&&'Ciclo '+d.ciclo].filter(Boolean).join(' · ')||'Aún no completó su perfil'}</p><div className="flex flex-wrap items-center gap-2 mt-1"><Badge inst={d.inst} uni={d.uni}/>{r.trusted&&<Trusted/>}</div>
+{own&&!me.verified&&<button onClick={()=>go('verify')} className="mt-2 text-sm text-guinda underline underline-offset-4">Verificar mi correo universitario</button>}</div></div>
+<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">{stat(r.ventas,'ventas confirmadas')}{stat(r.n?r.avg.toFixed(1):'Nuevo',r.n?`promedio de ${r.n} ${r.n===1?'reseña':'reseñas'}`:'sin reseñas aún')}{stat(r.n?pct(r.matchR):'Sin datos','coincidió con lo publicado')}{stat(r.n?pct(r.onTimeR):'Sin datos','llegó a tiempo')}</div>
+<p className="text-xs text-ink/50 mt-3">Solo cuentan compras cerradas con código de entrega. "Vendedor confiable": 3 o más ventas y reseñas, puntaje de 4.5 o más y al menos 90% de coincidencia con lo publicado.</p></div>
+{own&&<form onSubmit={save} className="bg-white border border-linea rounded-3xl p-6 mt-6 grid sm:grid-cols-2 gap-4"><h2 className="sm:col-span-2 font-display text-2xl">Tus datos</h2>
+<label><span className="font-medium block mb-1">Nombre</span><input value={f.name} onChange={e=>setF({...f,name:e.target.value})} className={inp}/></label>
+<div><span className="font-medium block mb-1">Universidad</span><p className={inp+' text-ink/60'}>{me.verified?me.uni+' (de tu correo verificado)':'Se completa al verificar tu correo'}</p></div>
+<label><span className="font-medium block mb-1">Carrera</span><input value={f.carrera} onChange={e=>setF({...f,carrera:e.target.value})} className={inp}/></label>
+<label><span className="font-medium block mb-1">Ciclo actual</span><input value={f.ciclo} onChange={e=>setF({...f,ciclo:e.target.value})} placeholder="Ej: VI" className={inp}/></label>
+<button className="sm:col-span-2 bg-guinda text-white rounded-full py-3 font-medium">Guardar perfil</button></form>}
+<h2 className="font-display text-3xl mt-10 mb-4">Reseñas</h2>
+{rs.length?<div className="space-y-3">{rs.map(x=><div key={x.id} className="bg-white border border-linea rounded-2xl p-5"><div className="flex justify-between gap-3 flex-wrap"><div className="flex items-center gap-2"><Stars v={x.stars}/><span className="font-medium">{x.buyerName}</span></div><span className="text-sm text-ink/50">{fdate(x.createdAt)}</span></div>
+<p className="text-sm text-ink/60 mt-1">Compró: {x.title}</p>
+<div className="flex flex-wrap gap-2 mt-2 text-xs">{[[x.match,'Coincidió con lo publicado','No coincidió con lo publicado'],[x.onTime,'Llegó a tiempo','No llegó a tiempo']].map(([v,a,b])=><span key={a} className={`rounded-full px-2 py-0.5 border ${v?'border-linea':'border-guinda text-guinda'}`}>{v?a:b}</span>)}</div>
+{x.comment&&<p className="mt-2">{x.comment}</p>}
+{x.reply?<p className="mt-3 text-sm bg-bruma rounded-xl p-3"><b className="font-medium">Respuesta del vendedor:</b> {x.reply}</p>:own&&<div className="mt-3 flex gap-2"><input value={reply[x.id]||''} onChange={e=>setReply({...reply,[x.id]:e.target.value})} placeholder="Responder una vez, de forma pública" className="border border-linea rounded-xl px-3 py-2 flex-1 text-sm"/><button onClick={()=>answer(x)} className="border border-linea rounded-full px-4 text-sm hover:bg-bruma">Responder</button></div>}</div>)}</div>
+:<Empty t="Aún no hay reseñas" d={own?'Las reseñas aparecen cuando un comprador confirma la entrega con su código.':'Esta persona todavía no tiene compras confirmadas.'}/>}
+<h2 className="font-display text-3xl mt-10 mb-4">{own?'Tus publicaciones':'Publicaciones'}</h2>
+{mine.length?<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{mine.map(p=><div key={p.id}><Card p={p} open={open} rep={rep}/>{own&&<div className="flex items-center justify-between px-2 pt-1 text-sm"><span className="text-ink/60">{p.status==='vendido'?'Vendido':p.status==='reservado'?'Reservado':'Activo'}</span>{p.status!=='reservado'&&<button onClick={()=>del(p)} className="text-guinda underline underline-offset-4">Eliminar</button>}</div>}</div>)}</div>:<Empty t="Sin publicaciones" d={own?'Publica tu primer material en un minuto.':'Esta persona aún no publica nada.'} b={own&&'Publicar'} f={()=>go('sell')}/>}</main>}
+
+function Sell({me,profile,L,items,open,go,shout}){
+const empty={title:'',cat:'Libros',cond:'Bueno',price:'',newPrice:'',course:'',ciclo:'I',carrera:profile.carrera||'',desc:'',photos:[]};
+const [f,setF]=useState(empty);const [err,setErr]=useState('');const [busy,setBusy]=useState(false);const [pBusy,setPBusy]=useState(false);const [how,setHow]=useState(false);
+useEffect(()=>setF(x=>({...x,carrera:x.carrera||profile.carrera||''})),[profile.carrera]);
+const pdf=f.cat==='Apuntes PDF';const catLabel=(CATS.find(c=>c.id===f.cat)||CATS[0]).label.toLowerCase();
+const S=useMemo(()=>suggest(f,items,me.uid),[f.cat,f.cond,f.course,f.newPrice,items,me.uid]);
+const dev=+f.price>0?(+f.price-S.price)/S.price:0;
+const set=k=>e=>setF({...f,[k]:e.target.value});
+const pic=async e=>{const fs=[...e.target.files].filter(x=>!x.type||x.type.startsWith('image/'));e.target.value='';if(!fs.length)return;const room=MAXF-f.photos.length;if(room<=0){setErr(`Puedes subir hasta ${MAXF} fotos.`);return}
+setPBusy(true);const out=(await Promise.all(fs.slice(0,room).map(shrink))).filter(Boolean);setPBusy(false);
+setF(x=>({...x,photos:[...x.photos,...out].slice(0,MAXF)}));
+setErr(out.length<Math.min(fs.length,room)?'Alguna foto no se pudo leer. Prueba con JPG o PNG.':fs.length>room?`Solo se agregaron ${room}: el máximo es ${MAXF} fotos.`:'')};
+const rmPic=k=>setF(x=>({...x,photos:x.photos.filter((_,j)=>j!==k)}));
+const coverPic=k=>setF(x=>({...x,photos:[x.photos[k],...x.photos.filter((_,j)=>j!==k)]}));
+const pub=async e=>{e.preventDefault();const t={...f,title:norm(f.title),carrera:norm(f.carrera),course:norm(f.course),desc:norm(f.desc)};const nv=!pdf&&+t.newPrice>0?+t.newPrice:null;
+if(t.title.length<4||!(+t.price>0)||!t.carrera||!t.course){setErr('Completa título, precio, carrera y curso.');return}
+if(nv&&+t.price>nv){setErr('Tu precio no puede ser mayor que el precio nuevo.');return}
+if(!t.photos.length){setErr('Agrega al menos una foto del material.');return}
+if(t.photos.join('').length>900000){setErr('Las fotos pesan demasiado. Quita una e intenta de nuevo.');return}
+setErr('');setBusy(true);
+try{const w=db.collection('products').add({title:t.title,desc:t.desc,cat:t.cat,cond:pdf?'Digital':t.cond,price:+t.price,newPrice:nv,sugPrice:S.price,course:t.course,ciclo:t.ciclo,uni:me.uni,carrera:t.carrera,photos:t.photos,ownerId:me.uid,ownerName:me.name,ownerInst:true,status:'activo',createdAt:TS()});
+await Promise.race([w,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))]);shout('Publicado: ya lo ven todos');setF({...empty,carrera:t.carrera})}
+catch(x){setErr(x.message==='timeout'?'No se guardó: no hay conexión con la base de datos. Revisa que Firestore esté creado y sus reglas publicadas.':x.code==='permission-denied'?'Las reglas de Firestore no permiten publicar. Revisa que estén publicadas las reglas nuevas y que tu correo esté verificado.':'No se pudo publicar ('+(x.code||x.message)+').')}setBusy(false)};
+const mine=items.filter(p=>p.ownerId===me.uid&&p.status!=='vendido');
+const age=p=>p.createdAt&&p.createdAt.seconds?Math.floor((Date.now()/1000-p.createdAt.seconds)/86400):0;
+const lower=async(p,np)=>{try{await db.collection('products').doc(p.id).update({price:np});shout('Precio actualizado a S/ '+np)}catch(e){shout('No se pudo actualizar el precio')}};
+const inp="w-full border border-linea rounded-xl p-3 bg-white";
+const DL=({id,a})=><datalist id={id}>{a.map(x=><option key={x} value={x}/>)}</datalist>;
+return <main className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-5 gap-8">
+<form onSubmit={pub} className="lg:col-span-3 bg-white border border-linea rounded-3xl p-6 space-y-4">
+<div><h1 className="font-display text-4xl">Publica en un minuto</h1><p className="text-ink/60 mt-1 flex items-center gap-1"><I n="shield" s={15} c="text-guinda"/>Publicas como estudiante verificado de {me.uni}.</p></div>
+<label className="block"><span className="font-medium block mb-1">Título</span><input value={f.title} onChange={set('title')} placeholder="Ej: Física Universitaria, Sears Zemansky" className={inp}/></label>
+<label className="block"><span className="font-medium block mb-1">Descripción (opcional)</span><textarea value={f.desc} onChange={set('desc')} rows="2" placeholder="Edición, qué incluye, tiempo de uso..." className={inp}/></label>
+<div className="grid sm:grid-cols-2 gap-4">
+<label><span className="font-medium block mb-1">Categoría</span><select value={f.cat} onChange={set('cat')} className={inp}>{CATS.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+<label><span className="font-medium block mb-1">Carrera</span><input list="dl-c" value={f.carrera} onChange={set('carrera')} className={inp}/></label>
+<label><span className="font-medium block mb-1">Curso</span><input list="dl-k" value={f.course} onChange={set('course')} placeholder="Ej: Cálculo 1" className={inp}/></label>
+<label><span className="font-medium block mb-1">Ciclo</span><select value={f.ciclo} onChange={set('ciclo')} className={inp}>{['I','II','III','IV','V','VI','VII','VIII','IX','X'].map(c=><option key={c}>{c}</option>)}</select></label></div>
+<DL id="dl-c" a={L.carr}/><DL id="dl-k" a={L.curs}/>
+{!pdf&&<div><span className="font-medium block mb-1">Estado</span><div className="grid grid-cols-3 gap-2">{['Excelente','Bueno','Desgastado'].map(s=><button type="button" key={s} onClick={()=>setF({...f,cond:s})} aria-pressed={f.cond===s} className={`border rounded-xl py-2.5 text-sm ${f.cond===s?'border-guinda bg-guinda/5 font-medium':'border-linea'}`}>{s}</button>)}</div><p className="text-sm text-ink/60 mt-2">{ESTADOS[f.cond]}</p></div>}
+<div className="grid sm:grid-cols-2 gap-4">
+{!pdf&&<label><span className="font-medium block mb-1">Precio nuevo aprox. (S/)</span><input type="number" min="1" value={f.newPrice} onChange={set('newPrice')} placeholder="Opcional" className={inp}/><span className="text-xs text-ink/50">Mejora el precio sugerido y el comprador ve cuánto ahorra.</span></label>}
+<label><span className="font-medium block mb-1">Tu precio (S/)</span><input type="number" min="1" value={f.price} onChange={set('price')} className={inp}/></label></div>
+<div className="bg-bruma rounded-2xl p-4">
+<div className="flex items-center justify-between gap-3 flex-wrap"><div><p className="text-sm text-ink/60">Precio sugerido</p><p className="font-display text-3xl">S/ {S.price}</p></div><button type="button" onClick={()=>setF({...f,price:S.price})} className="bg-white border border-linea rounded-full px-4 py-2 text-sm hover:border-guinda">Usar este precio</button></div>
+{dev>.3&&<p className="text-sm text-guinda mt-2">Tu precio está {pct(dev)} por encima del sugerido: podría tardar en venderse.</p>}
+{dev<-.4&&<p className="text-sm text-guinda mt-2">Tu precio está {pct(-dev)} por debajo del sugerido. Revisa que sea lo que quieres.</p>}
+<button type="button" onClick={()=>setHow(!how)} aria-expanded={how} className="text-sm text-guinda underline underline-offset-4 mt-2">{how?'Ocultar el cálculo':'¿Cómo se calcula?'}</button>
+{how&&<ol className="text-sm text-ink/70 mt-2 space-y-1.5 list-decimal pl-5">
+{S.pdf?<li>Apuntes digitales: base de S/ {PDFBASE}, porque un archivo no se desgasta.</li>:<li>Precio nuevo S/ {S.base} {S.nv?'(el que indicaste)':'(referencia de la categoría; si pones el precio nuevo, el cálculo mejora)'} × {pct(S.ret)}, que es lo que conserva un material de {catLabel} en estado {f.cond}: S/ {Math.round(S.model)}.</li>}
+{S.market!=null?<li>Mercado: {S.n} publicaciones de {norm(f.course)} de los últimos 6 meses, llevadas al mismo estado. Su mediana es S/ {Math.round(S.market)} y pesa {pct(S.w)} en el resultado.</li>:<li>Mercado: todavía no hay 3 publicaciones recientes de este curso para comparar, así que se usa solo el paso 1.</li>}
+{S.nv&&<li>Tope: nunca más del 85% del precio nuevo (S/ {Math.floor(S.nv*.85)}).</li>}
+<li>Se redondea {S.raw<30?'al sol más cercano':'a múltiplos de S/ 5'}.</li></ol>}</div>
+<div><span className="font-medium flex justify-between mb-1">Fotos<span className="font-normal text-sm text-ink/60">{f.photos.length}/{MAXF}</span></span>
+<p className="text-sm text-ink/60 mb-2">{pdf?'Sube capturas de algunas páginas para que vean el contenido.':'Fotos reales del material: portada, estado y detalles.'} Mínimo 1. La primera es la portada.</p>
+<div className="grid grid-cols-3 sm:grid-cols-4 gap-2">{f.photos.map((s,k)=><div key={k} className="relative aspect-square rounded-xl overflow-hidden border border-linea"><img src={s} alt={`Foto ${k+1}`} className="w-full h-full object-cover"/>{k===0?<span className="absolute left-1 bottom-1 text-[11px] bg-guinda text-white rounded-full px-2 py-0.5">Portada</span>:<button type="button" onClick={()=>coverPic(k)} className="absolute left-1 bottom-1 text-[11px] bg-white/90 rounded-full px-2 py-0.5 whitespace-nowrap">Hacer portada</button>}<button type="button" onClick={()=>rmPic(k)} aria-label={`Quitar foto ${k+1}`} className="absolute right-1 top-1 w-7 h-7 rounded-full bg-ink/80 text-white flex items-center justify-center"><I n="x" s={14}/></button></div>)}
+{f.photos.length<MAXF&&<label className={`aspect-square rounded-xl border border-dashed flex flex-col items-center justify-center gap-1 text-sm cursor-pointer hover:border-guinda ${!f.photos.length&&err?'border-guinda text-guinda':'border-linea text-ink/60'}`}><I n="camera" s={22}/>{pBusy?'Cargando...':'Agregar'}<input type="file" accept="image/*" multiple onChange={pic} className="sr-only"/></label>}</div></div>
+{err&&<p className="text-sm text-guinda" role="alert">{err}</p>}
+<button disabled={busy||pBusy} className="w-full bg-guinda text-white rounded-full py-3.5 font-medium flex items-center justify-center gap-2 disabled:opacity-50"><I n="plus" s={18}/>{busy?'Publicando...':'Publicar ahora'}</button></form>
+<aside className="lg:col-span-2"><h2 className="font-display text-2xl mb-3">Tus publicaciones activas</h2>
+{mine.length?<div className="space-y-3">{mine.map(p=>{const d=age(p);const np=rnd(p.price*.9);const stale=p.status==='activo'&&d>=21&&np<p.price&&np>=5;return <div key={p.id} className="bg-white border border-linea rounded-2xl p-4"><button onClick={()=>open(p)} className="w-full text-left"><p className="font-medium">{p.title}</p><p className="text-sm text-ink/60">{p.cond} · {p.course} · <b>S/ {p.price}</b>{p.status==='reservado'?' · Reservado':''}</p></button>
+{stale&&<div className="mt-3 bg-bruma rounded-xl p-3 text-sm"><p>Lleva {d} días sin reservas. Bajarlo 10% suele reactivar el interés.</p><button onClick={()=>lower(p,np)} className="mt-2 text-guinda underline underline-offset-4">Bajar a S/ {np}</button></div>}</div>})}<button onClick={()=>go('explore')} className="text-sm text-guinda underline underline-offset-4">Verlas en Explorar</button></div>
+:<div className="border border-dashed border-linea rounded-2xl p-6 text-ink/60">Aún no publicaste nada. Completa el formulario y aparecerá aquí y en Explorar.</div>}</aside></main>}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
