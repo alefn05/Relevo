@@ -1,0 +1,43 @@
+name: Capturas del MVP
+
+# Genera capturas de index.html con datos de ejemplo (capturas/mock.js) para la encuesta.
+on:
+  push:
+    paths:
+      - 'capturas/*.js'
+      - 'capturas/*.py'
+      - '.github/workflows/capturas.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capturas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dibujar fotos de ejemplo
+        run: |
+          pip install pillow
+          mkdir -p capturas/img
+          python capturas/draw.py capturas/img
+      - name: Instalar navegador
+        run: |
+          npm i --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Tomar capturas
+        run: node capturas/shots.js
+      - name: Guardar capturas en el repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add capturas/out capturas/img
+          git commit -m "Capturas del MVP para la encuesta" || echo "Sin cambios"
+          git push
