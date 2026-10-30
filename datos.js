@@ -21,8 +21,8 @@
     const pub = (id, titulo, categoria, estado, curso, universidad, precio, vendedorId, extra) => ({
       id, titulo, categoria, estado, curso, universidad, precio, vendedorId,
       descripcion: (extra && extra.descripcion) || 'Material de ejemplo para la demostración. Completo y revisado, con los detalles visibles en las fotos.',
-      fotos: fotosDe(categoria, (extra && extra.dias) || 3), codigo: 'DEMO',
-      revision: 'aprobada', fotoVerificada: true, retirada: false, creado: hace((extra && extra.dias) || 3), ...(extra || {})
+      fotos: fotosDe(categoria, (extra && extra.dias) ?? 3), codigo: 'DEMO',
+      revision: 'aprobada', fotoVerificada: true, retirada: false, creado: hace((extra && extra.dias) ?? 3), ...(extra || {})
     });
 
     const publicaciones = [
