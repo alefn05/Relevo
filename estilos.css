@@ -350,3 +350,88 @@ select.entrada { appearance: none; padding-right: 44px; background-image: url("d
   .aviso-demo .contenedor { gap: 2px 12px; padding-top: 8px; padding-bottom: 8px; }
   .codigo-dia { font-size: 52px; line-height: 56px; }
 }
+
+/* ==========================================================================
+   Estilo de tarjetas y píldoras (pedido por el dueño, basado en la versión anterior de Relevo).
+   Mantiene la paleta y las tipografías del manual; cambia formas y superficies.
+   ========================================================================== */
+:root { --radio: 20px; --radio-chico: 14px; --sombra-suave: 0 1px 2px rgba(30, 32, 36, 0.04), 0 12px 32px -18px rgba(30, 32, 36, 0.18); }
+
+/* Botones en píldora */
+.boton { border-radius: 999px; padding: 12px 26px; }
+.boton-chico { min-height: 44px; padding: 10px 18px; font-size: 15px; }
+.boton:not(.boton-principal) { border-color: var(--niebla); background: var(--blanco); }
+.boton:not(.boton-principal):hover { border-color: var(--carbon); background: var(--blanco); color: var(--carbon); }
+.boton[disabled]:not(.boton-principal):hover { border-color: var(--niebla); }
+
+/* Cabecera: navegación en píldoras, la activa en carbón */
+.cabecera .contenedor { border-bottom-color: transparent; }
+.cabecera { border-bottom: 1px solid var(--niebla); }
+@media (min-width: 1024px) {
+  .nav-envoltura { flex: 1; justify-content: space-between; margin-left: var(--e6); }
+  .nav { gap: 4px; margin: 0 auto; }
+  .nav a { padding: 0 18px; border-radius: 999px; color: var(--carbon); transition: background-color var(--t-medio) var(--salida), color var(--t-medio) var(--salida); }
+  .nav a:hover { background: var(--blanco); }
+  .nav a[aria-current="page"] { background: var(--carbon); color: var(--hueso); }
+  .nav a[aria-current="page"]::after { display: none; }
+  .nav-sesion { gap: var(--e2); }
+}
+.perfil { display: inline-flex; align-items: center; gap: 10px; font-size: 16px; }
+.perfil img, .avatar { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+.avatar { display: inline-flex; align-items: center; justify-content: center; background: var(--burdeos); color: var(--hueso); font-weight: 500; }
+
+/* Superficies blancas redondeadas */
+.nota { border-radius: var(--radio-chico); }
+.dialogo { border-radius: 28px; background: var(--blanco); }
+.tarjeta-qr { border-radius: 28px; box-shadow: var(--sombra-suave); }
+.entrada { border-radius: var(--radio-chico); }
+.estado-vacio { max-width: none; padding: var(--e8) var(--e4); border: 1px solid var(--niebla); border-radius: var(--radio); background: var(--blanco); text-align: center; display: flex; flex-direction: column; align-items: center; }
+.estado-vacio .texto { margin-left: auto; margin-right: auto; }
+.cuadro { border-radius: var(--radio-chico); }
+.miniaturas .cuadro, .resumen-material .cuadro { border-radius: 10px; }
+.opcion span { border-radius: 999px; }
+
+/* Las esquinas quedan solo donde marcan una foto real o el visor de la cámara */
+.tarjeta .esquinas::before, .tarjeta .esquinas::after, .tarjeta .esquinas > .eq::before, .tarjeta .esquinas > .eq::after,
+.resumen-material .esquinas::before, .resumen-material .esquinas::after, .resumen-material .esquinas > .eq::before, .resumen-material .esquinas > .eq::after { display: none; }
+
+/* Buscador grande del inicio */
+.buscador { display: flex; align-items: center; gap: 12px; max-width: 640px; padding: 6px 6px 6px 22px; background: var(--blanco); border: 1px solid var(--niebla); border-radius: 999px; box-shadow: var(--sombra-suave); transition: border-color var(--t-medio) ease, box-shadow 400ms var(--suave); }
+.buscador:focus-within { border-color: var(--carbon); box-shadow: 0 0 0 1px var(--carbon), var(--sombra-suave); }
+.buscador input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 17px; min-height: 44px; }
+.buscador input::placeholder { color: #6E727A; }
+.buscador .boton { flex: none; }
+
+/* Panel de ventajas */
+.panel-ventajas { background: var(--blanco); border: 1px solid var(--niebla); border-radius: 28px; padding: var(--e4); box-shadow: var(--sombra-suave); }
+.ventaja { display: grid; grid-template-columns: 48px 1fr; gap: var(--e2); align-items: start; }
+.ventaja + .ventaja { margin-top: var(--e3); }
+.ventaja-titulo { margin: 0; font-weight: 500; font-size: 18px; line-height: 26px; }
+.ficha-icono { width: 48px; height: 48px; border-radius: 50%; background: var(--hueso); color: var(--burdeos); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.ficha-cuadrada { border-radius: var(--radio-chico); background: var(--niebla); color: var(--carbon); width: 56px; height: 56px; }
+
+/* Categorías */
+.categorias { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--canal); }
+@media (max-width: 1023px) { .categorias { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+.categoria { display: flex; flex-direction: column; justify-content: space-between; gap: var(--e6); min-height: 168px; padding: var(--e3); background: var(--blanco); border: 1px solid var(--niebla); border-radius: var(--radio); text-decoration: none; color: inherit; transition: border-color var(--t-medio) ease, transform 600ms var(--suave), box-shadow 600ms var(--suave); }
+.categoria-nombre { font-weight: 500; font-size: 17px; }
+@media (hover: hover) { .categoria:hover { border-color: var(--burdeos); transform: translateY(-4px); box-shadow: var(--sombra-suave); } }
+
+/* Tarjetas de material */
+.tarjeta-blanca { background: var(--blanco); border: 1px solid var(--niebla); border-radius: var(--radio); padding: 12px; transition: border-color var(--t-medio) ease, transform 600ms var(--suave), box-shadow 600ms var(--suave); }
+@media (hover: hover) { .tarjeta-blanca:hover { border-color: var(--burdeos); transform: translateY(-4px); box-shadow: var(--sombra-suave); } }
+.tarjeta-blanca .titulo { margin-top: 14px; min-height: 48px; }
+.tarjeta-blanca .precio { margin-top: 4px; }
+.tarjeta-blanca .cuadro { background: var(--hueso); }
+.insignia { position: absolute; left: 12px; bottom: 12px; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.92); font-size: 13px; line-height: 18px; }
+.con-movimiento .tarjeta-blanca.revelar.visible:hover, .con-movimiento .categoria.revelar.visible:hover { transform: translateY(-4px); }
+
+@media (max-width: 520px) {
+  .buscador { padding-left: 16px; }
+  .buscador .boton { padding: 10px 16px; }
+  .panel-ventajas { padding: var(--e3); }
+  .categoria { min-height: 136px; padding: var(--e2); }
+}
+/* Titular con más cuerpo: tamaño óptico 48, el mismo del logotipo. */
+.display { font-size: clamp(48px, 5.8vw, 88px); line-height: 1.02; font-variation-settings: "opsz" 48; }
+.h1, .h2 { font-variation-settings: "opsz" 40; }

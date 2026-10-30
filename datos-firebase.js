@@ -74,10 +74,14 @@
         const d = await ref.get();
         if (!d.exists) await ref.set({ nombre: u.displayName || 'Estudiante', correo: (u.email || '').toLowerCase(), universidad: L.universidadPorCorreo(u.email, cfg), aceptoTerminos: false, aprobadoPorEquipo: false, creado: new Date().toISOString(), creadoServidor: servidor() });
       } catch (e) { console.warn('usuario', e.code); }
+      /* Perfil mínimo a partir de Google: la sesión funciona aunque el perfil de Firestore no se pueda leer. */
+      const basico = { id: u.uid, nombre: u.displayName || 'Estudiante', correo: (u.email || '').toLowerCase(), universidad: L.universidadPorCorreo(u.email, cfg), aceptoTerminos: false, aprobadoPorEquipo: false, foto: u.photoURL || '' };
+      const rol = L.esEquipo({ correo: u.email }, cfg) ? 'equipo' : 'estudiante';
+      f.yo = { ...basico, rol };
       quitar.push(ref.onSnapshot(d => {
-        f.yo = d.exists ? { id: u.uid, ...d.data(), correo: (u.email || '').toLowerCase(), rol: L.esEquipo({ correo: u.email }, cfg) ? 'equipo' : 'estudiante' } : null;
+        f.yo = { ...basico, ...(d.exists ? d.data() : {}), id: u.uid, correo: basico.correo, foto: basico.foto, rol };
         recalcular();
-      }, () => {}));
+      }, e => { console.warn('perfil', e.code); recalcular(); }));
       quitar.push(mirar(db.collection('publicaciones').where('vendedorId', '==', u.uid), 'mias'));
       quitar.push(mirar(db.collection('pedidos').where('compradorId', '==', u.uid), 'compras'));
       quitar.push(mirar(db.collection('pedidos').where('vendedorId', '==', u.uid), 'ventas'));

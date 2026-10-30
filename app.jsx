@@ -4,7 +4,7 @@ function Cabecera({ ruta, limpio }) {
   const [abierto, setAbierto] = useState(false);
   useEffect(() => setAbierto(false), [ruta.ruta]);
   const actual = '/' + (ruta.partes[0] || '');
-  const enlaces = [['/explorar', 'Explorar'], ['/publicar', 'Publicar'], ['/compras', 'Mis compras'], ['/ventas', 'Mis ventas'], ...(L.esEquipo(d.sesion, CFG) ? [['/equipo', 'Equipo']] : [])];
+  const enlaces = [['/', 'Inicio'], ['/explorar', 'Explorar'], ['/publicar', 'Publicar'], ['/compras', 'Mis compras'], ['/ventas', 'Mis ventas'], ...(L.esEquipo(d.sesion, CFG) ? [['/equipo', 'Equipo']] : [])];
   const volver = ruta.ruta === '/ingresar' ? (ruta.query.get('volver') || '/') : ruta.ruta;
   return <header className="cabecera">
     <div className="contenedor">
@@ -16,8 +16,8 @@ function Cabecera({ ruta, limpio }) {
         <div id="navegacion" className={'nav-envoltura' + (abierto ? ' abierto' : '')}>
           <nav className="nav" aria-label="Principal">{enlaces.map(([a, t]) => <A key={a} a={a} aria-current={actual === a ? 'page' : undefined}>{t}</A>)}</nav>
           <div className="nav-sesion">{d.sesion
-            ? <><span className="secundario pequeno" style={{ display: 'inline-flex', alignItems: 'center' }}>{primerNombre(d.sesion.nombre)}</span><button className="enlace" onClick={() => { Datos.cerrarSesion(); ir('/'); }}>Salir</button></>
-            : <A a={'/ingresar?volver=' + volver} className="enlace">Ingresar</A>}</div>
+            ? <><span className="perfil">{d.sesion.foto ? <img src={d.sesion.foto} alt="" referrerPolicy="no-referrer" /> : <span className="avatar" aria-hidden="true">{(d.sesion.nombre || 'E').charAt(0).toUpperCase()}</span>}<span>{primerNombre(d.sesion.nombre)}</span></span><button className="boton boton-chico" onClick={() => { Datos.cerrarSesion(); ir('/'); }}>Salir</button></>
+            : <A a={'/ingresar?volver=' + volver} className="boton boton-principal boton-chico"><Icono n="user" s={16} />Ingresar</A>}</div>
         </div>
       </>}
     </div>

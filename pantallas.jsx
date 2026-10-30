@@ -2,33 +2,52 @@
 
 /* ---------- Inicio ---------- */
 function Inicio() {
+  const [busca, setBusca] = useState('');
+  const ref = useRef();
+  const progreso = useProgreso(ref);
+  const ventajas = [
+    ['shield', 'Foto verificada', 'Cada foto se toma con el código del día y el equipo la revisa antes de publicar.'],
+    ['lock', 'Pago protegido', 'Pagas con Yape y Relevo guarda el dinero hasta que confirmes que recibiste el material.'],
+    ['pin', 'Entrega en lugar público', 'Cerca de tu campus, con gente y vigilancia. Revisas el material antes de confirmar.']
+  ];
   const pasos = [
     ['Publica con foto verificada', 'Toma las fotos con el código del día. El equipo las revisa antes de publicar.'],
     ['Paga con Yape', 'Relevo guarda el dinero hasta que confirmes que recibiste el material.'],
     ['Recibe en un lugar público', 'Elige un punto concurrido cerca de tu universidad y revisa el material antes de confirmar.']
   ];
-  const ref = useRef();
-  const progreso = useProgreso(ref);
   return <div className="pantalla">
-    <section className="contenedor grilla" style={{ paddingTop: 'clamp(56px, 10vw, 136px)' }}>
-      <h1 className="display" style={{ gridColumn: '1 / -1' }}>
-        <span className="mascara"><span style={retraso(1)}>Publica en dos minutos.</span></span>
-        <span className="mascara"><span style={retraso(3)}>Encuentra a quien lo necesita.</span></span>
-      </h1>
-      <div style={{ gridColumn: '1 / span 5', marginTop: 32, ...retraso(6) }} className="aparecer">
-        <p className="texto secundario">Compra y vende libros, calculadoras, batas e instrumentos de segunda mano con estudiantes de Lima.</p>
-        <div className="acciones" style={{ marginTop: 40 }}>
-          <A a="/publicar" className="boton boton-principal">Publicar mi material</A>
-          <A a="/explorar" className="enlace">Explorar materiales</A>
-        </div>
+    <section className="contenedor grilla" style={{ paddingTop: 'clamp(48px, 8vw, 112px)', alignItems: 'center', rowGap: 48 }}>
+      <div style={{ gridColumn: '1 / span 7' }}>
+        <h1 className="display">
+          <span className="mascara"><span style={retraso(1)}>Lo que ya usaste,</span></span>
+          <span className="mascara"><span style={retraso(3)}>le sirve a quien sigue.</span></span>
+        </h1>
+        <p className="texto secundario aparecer" style={{ marginTop: 28, fontSize: 20, lineHeight: '32px', ...retraso(5) }}>Compra y vende libros, calculadoras, batas e instrumentos con estudiantes de Lima. Pagas con Yape y recibes en un lugar público cerca de tu campus.</p>
+        <form className="buscador aparecer" style={{ marginTop: 36, ...retraso(6) }} role="search" onSubmit={e => { e.preventDefault(); ir('/explorar' + (busca.trim() ? '?q=' + encodeURIComponent(busca.trim()) : '')); }}>
+          <Icono n="search" c="secundario" />
+          <label className="oculto" htmlFor="busca-inicio">Buscar</label>
+          <input id="busca-inicio" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Busca por curso, carrera o material" />
+          <button className="boton boton-principal">Buscar</button>
+        </form>
+        <div className="aparecer" style={{ marginTop: 20, ...retraso(7) }}><A a="/publicar" className="enlace">Publicar mi material</A></div>
       </div>
+      <aside className="panel-ventajas aparecer" style={{ gridColumn: '9 / span 4', ...retraso(5) }} aria-label="Por qué Relevo">
+        {ventajas.map(([n, t, d]) => <div key={t} className="ventaja">
+          <span className="ficha-icono"><Icono n={n} /></span>
+          <div><p className="ventaja-titulo">{t}</p><p className="secundario pequeno" style={{ margin: '2px 0 0' }}>{d}</p></div>
+        </div>)}
+      </aside>
     </section>
-    <section className="contenedor" style={{ marginTop: 'clamp(64px, 9vw, 128px)' }} aria-label="Categorías">
-      <div className="rejilla">{CFG.CATEGORIAS.map((c, i) =>
-        <A key={c.id} a={'/explorar?cat=' + c.id} className="tarjeta revelar" style={retraso(i)}><Cuadro cat={c.id} alt="" /><p className="titulo">{c.nombre}</p></A>)}</div>
+    <section className="contenedor" style={{ marginTop: 'clamp(72px, 10vw, 136px)' }} aria-labelledby="t-categorias">
+      <h2 className="h2 revelar" id="t-categorias">Categorías</h2>
+      <div className="categorias" style={{ marginTop: 24 }}>{CFG.CATEGORIAS.map((c, i) =>
+        <A key={c.id} a={'/explorar?cat=' + c.id} className="categoria revelar" style={retraso(i)}>
+          <span className="ficha-icono ficha-cuadrada"><Icono n={ICONO_CATEGORIA[c.id] || 'box'} /></span>
+          <span className="categoria-nombre">{c.nombre}</span>
+        </A>)}</div>
     </section>
-    <section className="contenedor grilla" style={{ marginTop: 'clamp(80px, 11vw, 160px)' }}>
-      <div style={{ gridColumn: '1 / span 4' }}><h2 className="h2 revelar" style={{ position: 'sticky', top: 128 }}>Pasar lo que todavía sirve.</h2></div>
+    <section className="contenedor grilla" style={{ marginTop: 'clamp(96px, 12vw, 176px)' }}>
+      <div style={{ gridColumn: '1 / span 4' }}><h2 className="h2 revelar" style={{ position: 'sticky', top: 128 }}>Así funciona.</h2></div>
       <ol ref={ref} className="recorrido" style={{ gridColumn: '6 / span 7', '--progreso': progreso }}>
         <span className="testigo-viajero" aria-hidden="true" />
         {pasos.map(([t, d], i) =>
@@ -42,17 +61,23 @@ function Inicio() {
 
 /* ---------- Tarjeta y explorar ---------- */
 function Tarjeta({ p, i = 0 }) {
-  return <A a={'/material/' + p.id} className="tarjeta revelar" style={retraso(i % 4)}>
-    <Cuadro cat={p.categoria} foto={portadaDe(p)} alt={p.titulo} />
-    <p className="titulo">{p.titulo}</p>
-    <p className="meta">{p.curso} · {p.universidad}</p>
-    <div className="tarjeta-pie"><p className="precio">{L.soles(p.precio)}</p>{p.fotoVerificada && <Sello />}</div>
+  return <A a={'/material/' + p.id} className="tarjeta tarjeta-blanca revelar" style={retraso(i % 4)}>
+    <div style={{ position: 'relative' }}>
+      <Cuadro cat={p.categoria} foto={portadaDe(p)} alt={p.titulo} />
+      <span className="insignia">{p.estado}</span>
+    </div>
+    <div style={{ padding: '4px 4px 2px' }}>
+      <p className="titulo">{p.titulo}</p>
+      <p className="precio">{L.soles(p.precio)}</p>
+      <p className="meta">{p.curso} · {p.universidad}</p>
+      {p.fotoVerificada && <p className="meta" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--carbon)', marginTop: 8 }}><Icono n="shield" s={15} />Foto verificada</p>}
+    </div>
   </A>;
 }
 
 function Explorar({ ruta }) {
   const d = useDatos();
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(ruta.query.get('q') || '');
   const [cat, setCat] = useState(ruta.query.get('cat') || '');
   const [uni, setUni] = useState('');
   useEffect(() => { setCat(ruta.query.get('cat') || ''); }, [ruta.query.get('cat')]);
