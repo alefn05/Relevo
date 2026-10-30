@@ -13,5 +13,5 @@ Object.assign(window.RELEVO_CONFIG, {
     appId: '1:918035821584:web:c8d39266c6b0bdaef98695'
   },
   /* Correos del equipo. Deben ser exactamente los mismos que la lista ADMINS de firestore.rules. */
-  CORREOS_ADMIN: ['equipo@relevo.test']
+  CORREOS_ADMIN: ['u202312020@gmail.com']
 });

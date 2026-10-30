@@ -7,7 +7,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Correos del equipo. Deben ser los mismos que CORREOS_ADMIN en piloto/config-piloto.js.
-    function admins() { return ['equipo@relevo.test']; }
+    function admins() { return ['u202312020@gmail.com']; }
 
     function conSesion() { return request.auth != null; }
     function uid() { return request.auth.uid; }

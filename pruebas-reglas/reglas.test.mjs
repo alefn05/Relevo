@@ -5,7 +5,7 @@ import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebas
 import { doc, getDoc, setDoc, updateDoc, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
 
 let env;
-const ADMIN = 'equipo@relevo.test';
+const ADMIN = 'u202312020@gmail.com';
 const ahora = '2026-11-01T15:00:00.000Z';
 const paso = (estado, por) => ({ estado, fecha: ahora, por, nota: '' });
 
@@ -68,7 +68,7 @@ test('Solo el equipo aprueba publicaciones', async () => {
 test('Un correo parecido o sin verificar no es del equipo', async () => {
   const falso = env.authenticatedContext('falso', { email: ADMIN, email_verified: false }).firestore();
   await assertFails(updateDoc(doc(falso, 'publicaciones/revision'), { revision: 'aprobada' }));
-  const otro = como('otro', 'equipo@relevo.test.ejemplo.com');
+  const otro = como('otro', 'u202312020@gmail.com.ejemplo.com');
   await assertFails(updateDoc(doc(otro, 'publicaciones/revision'), { revision: 'aprobada' }));
 });
 
