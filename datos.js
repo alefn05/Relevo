@@ -1,7 +1,7 @@
 /* Capa de datos de Relevo.
    Fase A ('demo'): todo vive en la memoria del navegador con datos de ejemplo claramente falsos.
    Nada se envía a ningún servidor y todo se borra al recargar la página.
-   Fase B ('firebase'): esta misma interfaz se implementará con Firestore e inicio de sesión con Google. */
+   Fase B ('firebase'): la misma interfaz con Firestore y Google, en datos-firebase.js (piloto en /piloto/). */
 (function (raiz) {
   const L = raiz.RelevoLogica;
 
@@ -94,6 +94,7 @@
       cerrarSesion: () => poner({ sesionId: null }),
       aceptarTerminos: () => { const u = exigirSesion(); ponerUsuario(u.id, () => ({ aceptoTerminos: true })); },
       disponible: pubId => !estado.pedidos.some(p => p.pubId === pubId && p.estado !== 'cancelado'),
+      cargarFotos: async pubId => { const p = estado.publicaciones.find(x => x.id === pubId); return p ? p.fotos : []; },
 
       publicar: accion(form => {
         const u = exigirSesion();
@@ -111,13 +112,13 @@
       }),
       retirarPublicacion: accion(id => { const u = exigirSesion(); const p = estado.publicaciones.find(x => x.id === id); if (!p || p.vendedorId !== u.id) throw new Error('Esta publicación no es tuya.'); ponerPub(id, () => ({ retirada: true })); }),
 
-      comprar: accion((pubId, operacion) => {
+      comprar: accion((pubId, operacion, monto) => {
         const u = exigirSesion(); const p = estado.publicaciones.find(x => x.id === pubId);
         if (!p || p.revision !== 'aprobada' || p.retirada) throw new Error('Este material ya no está disponible.');
         if (p.vendedorId === u.id) throw new Error('No puedes comprar tu propia publicación.');
         if (estado.pedidos.some(x => x.pubId === pubId && x.estado !== 'cancelado')) throw new Error('Otra persona ya está comprando este material.');
         if (!u.aceptoTerminos) ponerUsuario(u.id, () => ({ aceptoTerminos: true }));
-        const nuevo = L.nuevoPedido(p, u.id, operacion);
+        const nuevo = L.nuevoPedido(p, u.id, operacion, null, monto);
         poner({ pedidos: [nuevo, ...estado.pedidos] });
         return nuevo;
       }),
@@ -138,7 +139,8 @@
 
   function crearDatos(cfg) {
     if (cfg.MODO_DATOS === 'demo') return crearDatosDemo(cfg);
-    throw new Error('El modo "' + cfg.MODO_DATOS + '" se conecta en la Fase B. Usa MODO_DATOS: \'demo\' en config.js.');
+    if (cfg.MODO_DATOS === 'firebase' && raiz.RelevoDatosFirebase) return raiz.RelevoDatosFirebase.crearDatosFirebase(cfg);
+    throw new Error('No se pudo iniciar el modo "' + cfg.MODO_DATOS + '". Revisa config.js y que cargue datos-firebase.js.');
   }
 
   raiz.RelevoDatos = { crearDatos, crearDatosDemo };

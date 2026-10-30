@@ -69,19 +69,21 @@
     if (!puedeCambiar(pedido, nuevo, rol)) throw new Error('No se puede pasar de "' + ESTADOS[pedido.estado] + '" a "' + ESTADOS[nuevo] + '".');
     const e = extra || {};
     if (nuevo === 'pago_informado' && !validarOperacion(e.operacion).valido) throw new Error('Falta el número de operación de Yape.');
+    if (nuevo === 'pago_informado' && e.monto != null && !validarMonto(e.monto).valido) throw new Error(validarMonto(e.monto).error);
     if (nuevo === 'en_reclamo' && !e.motivo) throw new Error('Indica qué pasó.');
     if (nuevo === 'pago_pendiente' && !e.motivo) throw new Error('Indica por qué se rechaza el pago.');
     const fecha = (ahora || new Date()).toISOString();
     return {
       ...pedido,
       ...(e.operacion ? { operacion: String(e.operacion).trim() } : {}),
+      ...(e.monto != null && e.monto !== '' ? { montoInformado: leerPrecio(e.monto) } : {}),
       ...(nuevo === 'en_reclamo' ? { reclamo: { motivo: e.motivo, detalle: e.detalle || '', fecha, por: rol } } : {}),
       estado: nuevo,
       historial: [...(pedido.historial || []), { estado: nuevo, fecha, por: rol, nota: e.motivo || '' }]
     };
   }
 
-  function nuevoPedido(pub, compradorId, operacion, ahora) {
+  function nuevoPedido(pub, compradorId, operacion, ahora, monto) {
     const fecha = (ahora || new Date()).toISOString();
     const base = {
       id: 'P' + Math.random().toString(36).slice(2, 8).toUpperCase(),
@@ -89,7 +91,7 @@
       estado: 'pago_pendiente', creado: fecha, historial: [{ estado: 'pago_pendiente', fecha, por: 'comprador', nota: '' }],
       entrega: { punto: '', horario: '' }
     };
-    return cambiarEstado(base, 'pago_informado', 'comprador', { operacion }, ahora);
+    return cambiarEstado(base, 'pago_informado', 'comprador', { operacion, monto }, ahora);
   }
 
   function validarOperacion(texto) {
@@ -97,6 +99,14 @@
     if (!t) return { valido: false, error: 'Escribe el número de operación que aparece en Yape.' };
     if (!/^\d{4,20}$/.test(t)) return { valido: false, error: 'El número de operación solo tiene dígitos. Revísalo en el detalle del Yape.' };
     return { valido: true, error: null };
+  }
+
+  /* Monto que el comprador dice haber enviado por Yape. El equipo lo contrasta con su historial. */
+  function validarMonto(texto) {
+    if (texto == null || String(texto).trim() === '') return { valido: false, error: 'Escribe el monto que enviaste por Yape.' };
+    const n = leerPrecio(texto);
+    if (!Number.isFinite(n) || n <= 0) return { valido: false, error: 'Escribe el monto como aparece en Yape, por ejemplo 35 o 35.50.' };
+    return { valido: true, error: null, monto: n };
   }
 
   /* ---------- Usuarios y permisos ---------- */
@@ -120,8 +130,8 @@
 
   /* Lo único que la vista del comprador recibe de un pedido: nunca la comisión ni lo que recibe el vendedor. */
   function pedidoParaComprador(p) {
-    const { id, pubId, precio, estado, historial, entrega, operacion, reclamo, creado } = p;
-    return { id, pubId, precio, estado, historial, entrega, operacion, reclamo, creado };
+    const { id, pubId, precio, estado, historial, entrega, operacion, montoInformado, reclamo, reclamoAbierto, creado } = p;
+    return { id, pubId, precio, estado, historial, entrega, operacion, montoInformado, reclamo, reclamoAbierto, creado };
   }
 
   /* ---------- Foto verificada ---------- */
@@ -184,7 +194,7 @@
   }
 
   const L = {
-    soles, leerPrecio, calcularVenta, ESTADOS, CAMINO, TRANSICIONES, puedeCambiar, cambiarEstado, nuevoPedido, validarOperacion,
+    soles, leerPrecio, calcularVenta, ESTADOS, CAMINO, TRANSICIONES, puedeCambiar, cambiarEstado, nuevoPedido, validarOperacion, validarMonto,
     universidadPorCorreo, vendedorVerificado, esEquipo, rolEnPedido, pedidoParaComprador,
     fechaLima, codigoDelDia, angulosDe, validarPublicacion, COLUMNAS_CSV, filaCSV, generarCSV
   };

@@ -23,6 +23,9 @@
   --t-rapido: 150ms;
   --t-medio: 200ms;
   --t-lento: 250ms;
+  /* Movimiento de presentación (scroll, páginas, portada): más lento y suave, estilo Apple. */
+  --suave: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-revelar: 900ms;
 }
 @media (max-width: 1439px) { :root { --margen: 64px; } }
 @media (max-width: 1279px) { :root { --margen: 48px; } }
@@ -71,8 +74,31 @@ a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; 
 .hilo { border: 0; border-top: 1px solid var(--niebla); margin: 0; }
 .hilo-fuerte { border-top-color: var(--carbon); }
 main { min-height: 70vh; padding-bottom: var(--e16); }
-.pantalla { animation: entrar var(--t-lento) var(--salida) both; }
-@keyframes entrar { from { opacity: 0; transform: translateY(6px); } }
+.pantalla { animation: entrar 650ms var(--suave) both; }
+@keyframes entrar { from { opacity: 0; transform: translateY(14px); } }
+
+/* Aparición al entrar en pantalla. Solo se oculta cuando el JavaScript está listo para mostrarla. */
+.con-movimiento .revelar { opacity: 0; transform: translateY(32px); transition: opacity var(--t-revelar) var(--suave), transform var(--t-revelar) var(--suave); transition-delay: var(--retraso, 0ms); }
+.con-movimiento .revelar.visible { opacity: 1; transform: none; }
+/* Titular revelado línea por línea, desde abajo, detrás de una máscara. */
+.mascara { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.mascara > span { display: block; animation: subir 1100ms var(--suave) both; animation-delay: var(--retraso, 0ms); }
+@keyframes subir { from { transform: translateY(105%); } }
+.aparecer { animation: aparecer 1000ms var(--suave) both; animation-delay: var(--retraso, 0ms); }
+@keyframes aparecer { from { opacity: 0; transform: translateY(18px); } }
+
+/* Recorrido "Cómo funciona": el hilo se dibuja con el scroll y el punto testigo marca el paso actual. */
+.recorrido { position: relative; list-style: none; margin: 0; padding: 0 0 0 48px; --progreso: 0; }
+.recorrido::before, .recorrido::after { content: ""; position: absolute; left: 4px; top: 10px; bottom: 10px; width: 1px; background: var(--niebla); }
+.recorrido::after { background: var(--carbon); transform-origin: top; transform: scaleY(var(--progreso)); }
+.recorrido .testigo-viajero { position: absolute; left: 0; top: calc(10px + (100% - 20px) * var(--progreso)); width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: var(--burdeos); z-index: 1; }
+.recorrido li { padding: 0 0 clamp(48px, 9vh, 96px); opacity: 0.32; transform: translateX(-6px); transition: opacity 700ms var(--suave), transform 700ms var(--suave); }
+.recorrido li:last-child { padding-bottom: 0; }
+.recorrido li.activo { opacity: 1; transform: none; }
+
+/* Imagen de objeto: un acercamiento lento al pasar el cursor. */
+.tarjeta .cuadro .objeto, .tarjeta .cuadro > img { transition: transform 900ms var(--suave); }
+@media (hover: hover) { .tarjeta:hover .cuadro .objeto, .tarjeta:hover .cuadro > img { transform: scale(1.045); } }
 
 /* Aviso de demostración */
 .aviso-demo { border-bottom: 1px solid var(--niebla); font-size: 14px; line-height: 20px; color: var(--grafito); }
@@ -310,7 +336,10 @@ select.entrada { appearance: none; padding-right: 44px; background-image: url("d
 .legal p, .legal li { max-width: 68ch; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; transition-delay: 0ms !important; animation-delay: 0ms !important; }
+  .con-movimiento .revelar { opacity: 1; transform: none; }
+  .recorrido { --progreso: 1 !important; }
+  .recorrido li { opacity: 1; transform: none; }
   .arco svg { animation: none; }
 }
 

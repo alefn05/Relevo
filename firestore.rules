@@ -1,0 +1,151 @@
+rules_version = '2';
+
+// Reglas de seguridad del piloto de Relevo.
+// El panel del equipo se protege aquí, no en el navegador: nadie fuera de ADMINS puede aprobar,
+// confirmar pagos, marcar transferencias ni leer reclamos, aunque modifique el código de la página.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Correos del equipo. Deben ser los mismos que CORREOS_ADMIN en piloto/config-piloto.js.
+    function admins() { return ['equipo@relevo.test']; }
+
+    function conSesion() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function correo() { return request.auth.token.email.lower(); }
+    function esAdmin() {
+      return conSesion() && request.auth.token.email_verified == true && correo() in admins();
+    }
+    // Mismos dominios que DOMINIOS_INSTITUCIONALES en config.js.
+    function esInstitucional() {
+      return conSesion() && request.auth.token.email_verified == true
+        && correo().matches('.*@(upc[.]edu[.]pe|pucp[.]edu[.]pe|aloe[.]ulima[.]edu[.]pe|ulima[.]edu[.]pe|alum[.]up[.]edu[.]pe|unmsm[.]edu[.]pe|uni[.]pe|utp[.]edu[.]pe|usmp[.]pe|upn[.]pe|urp[.]edu[.]pe)');
+    }
+    function nuevo() { return request.resource.data; }
+    function actual() { return resource.data; }
+    function soloCambia(campos) { return nuevo().diff(actual()).affectedKeys().hasOnly(campos); }
+    function comision() { return 4.0; }
+
+    // ---------- Usuarios: cada uno lee y edita lo suyo; el equipo lee todos y verifica vendedores ----------
+    match /usuarios/{id} {
+      allow read: if conSesion() && (uid() == id || esAdmin());
+      allow create: if conSesion() && uid() == id
+        && nuevo().aprobadoPorEquipo == false
+        && nuevo().correo == correo()
+        && nuevo().keys().hasOnly(['nombre', 'correo', 'universidad', 'aceptoTerminos', 'aprobadoPorEquipo', 'creado', 'creadoServidor']);
+      allow update: if esAdmin()
+        || (conSesion() && uid() == id && soloCambia(['aceptoTerminos', 'nombre']));
+      allow delete: if false;
+    }
+
+    // ---------- Publicaciones: las aprobadas son públicas ----------
+    match /publicaciones/{id} {
+      allow read: if actual().revision == 'aprobada'
+        || (conSesion() && actual().vendedorId == uid())
+        || esAdmin();
+
+      allow create: if conSesion()
+        && nuevo().vendedorId == uid()
+        && nuevo().revision == 'en_revision'
+        && nuevo().fotoVerificada == false
+        && nuevo().retirada == false
+        && nuevo().pedidoActivo == null
+        && nuevo().precio is number && nuevo().precio > comision() && nuevo().precio < 100000
+        && nuevo().titulo is string && nuevo().titulo.size() > 0 && nuevo().titulo.size() <= 140
+        && nuevo().descripcion is string && nuevo().descripcion.size() >= 20 && nuevo().descripcion.size() <= 2000
+        && nuevo().fotos is list && nuevo().fotos.size() >= 3 && nuevo().fotos.size() <= 6
+        && nuevo().portada is string && nuevo().portada.size() < 120000
+        && (nuevo().vendedorVerificado == false
+            || esInstitucional()
+            || get(/databases/$(database)/documents/usuarios/$(uid())).data.aprobadoPorEquipo == true);
+
+      allow update: if esAdmin()
+        // El vendedor solo puede retirar su publicación.
+        || (conSesion() && actual().vendedorId == uid() && soloCambia(['retirada']) && nuevo().retirada == true)
+        // Un comprador la reserva al crear su pedido en la misma operación.
+        || (conSesion() && soloCambia(['pedidoActivo'])
+            && actual().pedidoActivo == null && actual().revision == 'aprobada' && actual().retirada == false
+            && getAfter(/databases/$(database)/documents/pedidos/$(nuevo().pedidoActivo)).data.compradorId == uid()
+            && getAfter(/databases/$(database)/documents/pedidos/$(nuevo().pedidoActivo)).data.pubId == id)
+        // El comprador libera la publicación si cancela su pedido.
+        || (conSesion() && soloCambia(['pedidoActivo']) && nuevo().pedidoActivo == null
+            && getAfter(/databases/$(database)/documents/pedidos/$(actual().pedidoActivo)).data.compradorId == uid()
+            && getAfter(/databases/$(database)/documents/pedidos/$(actual().pedidoActivo)).data.estado == 'cancelado');
+      allow delete: if esAdmin();
+
+      // Fotos completas: se leen como la publicación; solo el vendedor las sube al crearla.
+      match /fotos/{n} {
+        function pub() { return get(/databases/$(database)/documents/publicaciones/$(id)).data; }
+        allow read: if pub().revision == 'aprobada' || (conSesion() && pub().vendedorId == uid()) || esAdmin();
+        allow create: if conSesion()
+          && getAfter(/databases/$(database)/documents/publicaciones/$(id)).data.vendedorId == uid()
+          && nuevo().vendedorId == uid()
+          && nuevo().src is string && nuevo().src.size() < 400000
+          && nuevo().keys().hasOnly(['n', 'angulo', 'fecha', 'src', 'vendedorId']);
+        allow update: if false;
+        allow delete: if esAdmin();
+      }
+    }
+
+    // ---------- Pedidos: cada usuario solo ve y modifica sus compras y ventas ----------
+    match /pedidos/{id} {
+      function esComprador() { return conSesion() && actual().compradorId == uid(); }
+      function esVendedor() { return conSesion() && actual().vendedorId == uid(); }
+      function de(a, b) { return actual().estado == a && nuevo().estado == b; }
+      function mismoEstado() { return nuevo().estado == actual().estado; }
+      // Cada cambio de estado agrega exactamente una entrada al historial.
+      function historialCrece() {
+        return nuevo().historial.size() == actual().historial.size() + 1
+          && nuevo().historial[actual().historial.size()].estado == nuevo().estado;
+      }
+      function entregaAbierta() { return actual().estado in ['pago_confirmado', 'en_coordinacion']; }
+
+      allow read: if (conSesion() && (actual().compradorId == uid() || actual().vendedorId == uid())) || esAdmin();
+
+      allow create: if conSesion()
+        && nuevo().compradorId == uid()
+        && nuevo().estado == 'pago_informado'
+        && nuevo().operacion is string && nuevo().operacion.matches('[0-9]{4,20}')
+        && nuevo().montoInformado is number && nuevo().montoInformado > 0
+        && nuevo().reclamoAbierto == false
+        && nuevo().historial.size() == 2
+        && get(/databases/$(database)/documents/publicaciones/$(nuevo().pubId)).data.revision == 'aprobada'
+        && get(/databases/$(database)/documents/publicaciones/$(nuevo().pubId)).data.pedidoActivo == null
+        && get(/databases/$(database)/documents/publicaciones/$(nuevo().pubId)).data.vendedorId == nuevo().vendedorId
+        && get(/databases/$(database)/documents/publicaciones/$(nuevo().pubId)).data.precio == nuevo().precio
+        && nuevo().vendedorId != uid();
+
+      allow update: if esAdmin()
+        || (esComprador() && (
+              (historialCrece() && soloCambia(['estado', 'historial', 'operacion', 'montoInformado'])
+                && de('pago_pendiente', 'pago_informado')
+                && nuevo().operacion.matches('[0-9]{4,20}') && nuevo().montoInformado is number)
+           || (historialCrece() && soloCambia(['estado', 'historial']) && (de('pago_pendiente', 'cancelado') || de('en_coordinacion', 'entregado')))
+           || (historialCrece() && soloCambia(['estado', 'historial', 'reclamoAbierto']) && nuevo().estado == 'en_reclamo'
+                && actual().estado in ['pago_confirmado', 'en_coordinacion', 'entregado'] && nuevo().reclamoAbierto == true)
+           || (mismoEstado() && entregaAbierta() && soloCambia(['entrega']))))
+        || (esVendedor() && (
+              (historialCrece() && soloCambia(['estado', 'historial', 'reclamoAbierto']) && nuevo().estado == 'en_reclamo'
+                && actual().estado in ['pago_confirmado', 'en_coordinacion'] && nuevo().reclamoAbierto == true)
+           || (mismoEstado() && entregaAbierta() && soloCambia(['entrega']))));
+      allow delete: if false;
+    }
+
+    // ---------- Reclamos: los crea el comprador o el vendedor del pedido; solo el equipo los lee ----------
+    match /reclamos/{rid} {
+      function pedido() { return getAfter(/databases/$(database)/documents/pedidos/$(nuevo().pedidoId)).data; }
+      allow read: if esAdmin();
+      allow create: if conSesion()
+        && (pedido().compradorId == uid() || pedido().vendedorId == uid())
+        && pedido().estado == 'en_reclamo'
+        && nuevo().pedidoId is string
+        && nuevo().motivo in ['distinto', 'no_aparecio', 'otro']
+        && nuevo().detalle is string && nuevo().detalle.size() <= 2000;
+      allow update, delete: if esAdmin();
+    }
+
+    // Todo lo demás está cerrado, incluidas las colecciones del MVP anterior.
+    match /{todo=**} {
+      allow read, write: if false;
+    }
+  }
+}

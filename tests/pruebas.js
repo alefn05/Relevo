@@ -56,6 +56,12 @@
     igual(p.estado, 'pago_informado'); igual(p.operacion, '12345678'); igual(p.precio, 35);
     igual(p.historial.length, 2); igual(p.historial[1].fecha, t0.toISOString());
   });
+  await prueba('El monto informado de Yape se guarda y se valida', async () => {
+    const p = L.nuevoPedido(pub, 'c', '12345678', t0, '35,00');
+    igual(p.montoInformado, 35);
+    await lanza(() => L.nuevoPedido(pub, 'c', '12345678', t0, 'abc'), 'monto');
+    igual(L.validarMonto('').valido, false); igual(L.validarMonto('0').valido, false); igual(L.validarMonto('34.5').monto, 34.5);
+  });
   await prueba('No se crea pedido sin número de operación válido', async () => {
     await lanza(() => L.nuevoPedido(pub, 'c', '', t0), 'operación');
     await lanza(() => L.nuevoPedido(pub, 'c', 'abc123', t0), 'operación');

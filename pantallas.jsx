@@ -7,10 +7,15 @@ function Inicio() {
     ['Paga con Yape', 'Relevo guarda el dinero hasta que confirmes que recibiste el material.'],
     ['Recibe en un lugar público', 'Elige un punto concurrido cerca de tu universidad y revisa el material antes de confirmar.']
   ];
+  const ref = useRef();
+  const progreso = useProgreso(ref);
   return <div className="pantalla">
     <section className="contenedor grilla" style={{ paddingTop: 'clamp(56px, 10vw, 136px)' }}>
-      <h1 className="display" style={{ gridColumn: '1 / -1' }}>Publica en dos minutos.<br />Encuentra a quien lo necesita.</h1>
-      <div style={{ gridColumn: '1 / span 5', marginTop: 32 }}>
+      <h1 className="display" style={{ gridColumn: '1 / -1' }}>
+        <span className="mascara"><span style={retraso(1)}>Publica en dos minutos.</span></span>
+        <span className="mascara"><span style={retraso(3)}>Encuentra a quien lo necesita.</span></span>
+      </h1>
+      <div style={{ gridColumn: '1 / span 5', marginTop: 32, ...retraso(6) }} className="aparecer">
         <p className="texto secundario">Compra y vende libros, calculadoras, batas e instrumentos de segunda mano con estudiantes de Lima.</p>
         <div className="acciones" style={{ marginTop: 40 }}>
           <A a="/publicar" className="boton boton-principal">Publicar mi material</A>
@@ -19,24 +24,26 @@ function Inicio() {
       </div>
     </section>
     <section className="contenedor" style={{ marginTop: 'clamp(64px, 9vw, 128px)' }} aria-label="Categorías">
-      <div className="rejilla">{CFG.CATEGORIAS.map(c =>
-        <A key={c.id} a={'/explorar?cat=' + c.id} className="tarjeta"><Cuadro cat={c.id} alt="" /><p className="titulo">{c.nombre}</p></A>)}</div>
+      <div className="rejilla">{CFG.CATEGORIAS.map((c, i) =>
+        <A key={c.id} a={'/explorar?cat=' + c.id} className="tarjeta revelar" style={retraso(i)}><Cuadro cat={c.id} alt="" /><p className="titulo">{c.nombre}</p></A>)}</div>
     </section>
     <section className="contenedor grilla" style={{ marginTop: 'clamp(80px, 11vw, 160px)' }}>
-      <h2 className="h2" style={{ gridColumn: '1 / span 4' }}>Pasar lo que todavía sirve.</h2>
-      <ol style={{ gridColumn: '6 / span 7', listStyle: 'none', margin: 0, padding: 0 }}>{pasos.map(([t, d], i) =>
-        <li key={t} style={{ display: 'grid', gridTemplateColumns: '48px 1fr', gap: 16, padding: '24px 0', borderTop: '1px solid var(--niebla)', borderBottom: i === pasos.length - 1 ? '1px solid var(--niebla)' : 0 }}>
-          <span className="h3 secundario" aria-hidden="true">{i + 1}</span>
-          <div><p className="h3">{t}</p><p className="texto secundario" style={{ marginTop: 4 }}>{d}</p></div>
+      <div style={{ gridColumn: '1 / span 4' }}><h2 className="h2 revelar" style={{ position: 'sticky', top: 128 }}>Pasar lo que todavía sirve.</h2></div>
+      <ol ref={ref} className="recorrido" style={{ gridColumn: '6 / span 7', '--progreso': progreso }}>
+        <span className="testigo-viajero" aria-hidden="true" />
+        {pasos.map(([t, d], i) =>
+        <li key={t} className={progreso >= i / pasos.length + 0.02 || progreso >= 0.98 ? 'activo' : ''}>
+          <p className="etiqueta">Paso {i + 1}</p>
+          <p className="h2" style={{ marginTop: 8 }}>{t}</p><p className="texto secundario" style={{ marginTop: 12 }}>{d}</p>
         </li>)}</ol>
     </section>
   </div>;
 }
 
 /* ---------- Tarjeta y explorar ---------- */
-function Tarjeta({ p }) {
-  return <A a={'/material/' + p.id} className="tarjeta">
-    <Cuadro cat={p.categoria} foto={p.fotos[0]} alt={p.titulo} />
+function Tarjeta({ p, i = 0 }) {
+  return <A a={'/material/' + p.id} className="tarjeta revelar" style={retraso(i % 4)}>
+    <Cuadro cat={p.categoria} foto={portadaDe(p)} alt={p.titulo} />
     <p className="titulo">{p.titulo}</p>
     <p className="meta">{p.curso} · {p.universidad}</p>
     <div className="tarjeta-pie"><p className="precio">{L.soles(p.precio)}</p>{p.fotoVerificada && <Sello />}</div>
@@ -67,19 +74,28 @@ function Explorar({ ruta }) {
     </form>
     <div style={{ marginTop: 56 }}>
       {!d.listo ? <Arco bloque texto="Cargando materiales" />
+        : !lista.length && !q && !cat && !uni ? <Vacio titulo="Todavía no hay materiales publicados." texto="Sé de los primeros: publica lo que ya no usas." accion={<A a="/publicar" className="boton">Publicar mi material</A>} />
         : !lista.length ? <Vacio titulo="No encontramos materiales con esos filtros." texto="Prueba con otro curso o quita los filtros." accion={<button className="boton" onClick={limpiar}>Quitar filtros</button>} />
-          : <><p className="secundario pequeno" style={{ marginBottom: 24 }} aria-live="polite">{lista.length} {lista.length === 1 ? 'material disponible' : 'materiales disponibles'}</p><div className="rejilla">{lista.map(p => <Tarjeta key={p.id} p={p} />)}</div></>}
+          : <><p className="secundario pequeno" style={{ marginBottom: 24 }} aria-live="polite">{lista.length} {lista.length === 1 ? 'material disponible' : 'materiales disponibles'}</p><div className="rejilla">{lista.map((p, i) => <Tarjeta key={p.id} p={p} i={i} />)}</div></>}
     </div>
   </div>;
 }
 
 /* ---------- Detalle del material ---------- */
+/* Fotos completas: en el piloto se cargan aparte para que la lista sea liviana. */
+function useFotos(p) {
+  const [fotos, setFotos] = useState(() => p.fotos.some(x => x.src) ? p.fotos : null);
+  useEffect(() => { let vivo = true; if (!fotos) Datos.cargarFotos(p.id).then(r => vivo && setFotos(r), () => vivo && setFotos(p.fotos)); return () => { vivo = false; }; }, [p.id]);
+  return fotos;
+}
 function Galeria({ p }) {
   const [i, setI] = useState(0);
-  const f = p.fotos[i] || p.fotos[0];
+  const cargadas = useFotos(p);
+  const lista = cargadas || p.fotos.map((x, k) => k === 0 ? portadaDe(p) : x);
+  const f = lista[i] || lista[0];
   return <div>
     <Cuadro cat={p.categoria} foto={f} rotulo={f && !f.src ? f.angulo : ''} alt={p.titulo + ', ' + (f ? f.angulo.toLowerCase() : '')} />
-    {p.fotos.length > 1 && <div className="miniaturas" role="group" aria-label="Fotos del material">{p.fotos.map((x, k) =>
+    {lista.length > 1 && <div className="miniaturas" role="group" aria-label="Fotos del material">{lista.map((x, k) =>
       <button key={k} type="button" onClick={() => setI(k)} aria-label={'Ver ' + x.angulo.toLowerCase()} aria-pressed={k === i} style={{ padding: 0, border: 0, background: 'none', cursor: 'pointer', outline: k === i ? '1px solid #1E2024' : 'none', outlineOffset: 3 }}>
         <Cuadro cat={p.categoria} foto={x} alt="" />
       </button>)}</div>}
@@ -97,8 +113,8 @@ function Material({ id }) {
   return <div className="pantalla contenedor">
     <div style={{ paddingTop: 32 }}><Volver a="/explorar">Volver a explorar</Volver></div>
     <div className="grilla" style={{ marginTop: 24, rowGap: 40 }}>
-      <div style={{ gridColumn: '1 / span 7' }}><Galeria p={p} /></div>
-      <div style={{ gridColumn: '9 / span 4' }} className="pila-3">
+      <div style={{ gridColumn: '1 / span 7' }} className="aparecer"><Galeria p={p} /></div>
+      <div style={{ gridColumn: '9 / span 4', ...retraso(2) }} className="pila-3 aparecer">
         <p className="etiqueta">{categoria(p.categoria).nombre}</p>
         <h1 className="h2">{p.titulo}</h1>
         <p className="h2 cifra">{L.soles(p.precio)}</p>
@@ -111,7 +127,7 @@ function Material({ id }) {
           <div><dt>Estado</dt><dd>{p.estado}</dd></div>
           <div><dt>Curso</dt><dd>{p.curso}</dd></div>
           <div><dt>Universidad</dt><dd>{p.universidad}</dd></div>
-          <div><dt>Vendedor</dt><dd>{primerNombre(vendedor && vendedor.nombre)}{L.vendedorVerificado(vendedor, CFG) ? <span className="secundario"> · Vendedor verificado</span> : ''}</dd></div>
+          <div><dt>Vendedor</dt><dd>{p.vendedorNombre || primerNombre(vendedor && vendedor.nombre)}{(p.vendedorVerificado ?? L.vendedorVerificado(vendedor, CFG)) ? <span className="secundario"> · Vendedor verificado</span> : ''}</dd></div>
           <div><dt>Publicado</dt><dd>{fechaCorta(p.creado)}</dd></div>
         </dl>
         <p className="texto">{p.descripcion}</p>
@@ -125,6 +141,7 @@ function Pago({ id }) {
   const d = useDatos();
   const avisar = useAviso();
   const [op, setOp] = useState('');
+  const [monto, setMonto] = useState('');
   const [enPaso3, setEnPaso3] = useState(false);
   const [acepto, setAcepto] = useState(false);
   const [errores, setErrores] = useState({});
@@ -150,20 +167,24 @@ function Pago({ id }) {
     if (ENTREVISTA) { avisar('Fin de la demostración. No se creó ningún pedido.'); ir('/material/' + id); return; }
     const err = {};
     const v = L.validarOperacion(op); if (!v.valido) err.op = v.error;
+    const m = L.validarMonto(monto); if (!m.valido) err.monto = m.error;
     if (necesitaTerminos && !acepto) err.terminos = 'Acepta los términos para comprar.';
     setErrores(err);
-    if (Object.keys(err).length) { document.getElementById(err.op ? 'operacion' : 'acepto').focus(); return; }
-    try { setHecho(await acc.correr(() => Datos.comprar(p.id, op.replace(/\s/g, '')))); window.scrollTo(0, 0); } catch (_) { }
+    if (Object.keys(err).length) { document.getElementById(err.op ? 'operacion' : err.monto ? 'monto' : 'acepto').focus(); return; }
+    try { setHecho(await acc.correr(() => Datos.comprar(p.id, op.replace(/\s/g, ''), monto))); window.scrollTo(0, 0); } catch (_) { }
   };
   const actual = ENTREVISTA ? 0 : (enPaso3 || op) ? 2 : 0;
   const pasos = [
     { titulo: 'Escanea el QR con Yape.', texto: 'Abre Yape, elige escanear y apunta al código. El titular que verás es ' + CFG.YAPE_TITULAR + '.' },
     { titulo: 'Escribe exactamente ' + L.soles(p.precio) + '.', texto: 'Si el monto es distinto, el equipo no podrá confirmar tu pago.' },
     {
-      titulo: ENTREVISTA ? 'Vuelve aquí y escribe el número de operación.' : 'Vuelve aquí y escribe el número de operación.',
+      titulo: ENTREVISTA ? 'Vuelve aquí y escribe el número de operación.' : 'Vuelve aquí y escribe el número de operación y el monto.',
       texto: ENTREVISTA ? 'Aparece en el detalle del Yape. No hace falta enviar captura.' : <div className="pila" style={{ marginTop: 12 }}>
         <Campo id="operacion" etiqueta="Número de operación" ayuda="Aparece en el detalle del Yape. No hace falta enviar captura." error={errores.op}>
           <input id="operacion" className="entrada" inputMode="numeric" autoComplete="off" value={op} onFocus={() => setEnPaso3(true)} onChange={e => setOp(e.target.value)} aria-describedby={errores.op ? 'operacion-error' : 'operacion-ayuda'} aria-invalid={!!errores.op} required />
+        </Campo>
+        <Campo id="monto" etiqueta="Monto que enviaste" ayuda={'Debe ser ' + L.soles(p.precio) + '.'} error={errores.monto || (monto && L.validarMonto(monto).valido && L.leerPrecio(monto) !== p.precio ? 'No coincide con ' + L.soles(p.precio) + '. Si enviaste otro monto, escríbelo igual y el equipo lo revisará.' : '')}>
+          <div className="prefijo"><span aria-hidden="true">S/</span><input id="monto" className="entrada" inputMode="decimal" autoComplete="off" value={monto} onFocus={() => setEnPaso3(true)} onChange={e => setMonto(e.target.value)} aria-invalid={!!errores.monto} required /></div>
         </Campo>
       </div>
     }
@@ -174,12 +195,12 @@ function Pago({ id }) {
       <div style={{ gridColumn: '1 / span 6', gridRow: 1 }} className="pila-5">
         <h1 className="h1">Paga con Yape.</h1>
         {ENTREVISTA && <div className="nota"><strong>Modo entrevista.</strong> En esta demostración nadie paga: no escanees el código. Te mostramos cómo sería el pago.</div>}
-        <div className="resumen-material"><Cuadro cat={p.categoria} foto={p.fotos[0]} alt="" /><div><p style={{ margin: 0, fontWeight: 500 }}>{p.titulo}</p><p className="secundario pequeno" style={{ margin: 0 }}>{p.estado} · {p.universidad}</p></div></div>
+        <div className="resumen-material"><Cuadro cat={p.categoria} foto={portadaDe(p)} alt="" /><div><p style={{ margin: 0, fontWeight: 500 }}>{p.titulo}</p><p className="secundario pequeno" style={{ margin: 0 }}>{p.estado} · {p.universidad}</p></div></div>
         <div><p className="etiqueta">Monto exacto a pagar</p><p className="monto" style={{ marginTop: 8 }}>{L.soles(p.precio)}</p></div>
       </div>
       <div style={{ gridColumn: '8 / span 5', gridRow: '1 / span 2' }}>
         <div className="tarjeta-qr pila-3">
-          <img src={CFG.YAPE_QR} alt={'Código QR de Yape a nombre de ' + CFG.YAPE_TITULAR} width="1206" height="900" />
+          <img src={RAIZ + CFG.YAPE_QR} alt={'Código QR de Yape a nombre de ' + CFG.YAPE_TITULAR} width="1206" height="900" />
           <hr className="hilo" />
           <div><p className="etiqueta">Titular en Yape</p><p style={{ margin: '4px 0 0', fontSize: 20 }}>{CFG.YAPE_TITULAR}</p></div>
         </div>
@@ -208,6 +229,19 @@ function Ingresar({ ruta }) {
   const acc = usarAccion();
   const volver = ruta.query.get('volver') || '/';
   const entrar = async id => { try { await acc.correr(() => Datos.iniciarSesion(id)); ir(volver.startsWith('/') ? volver : '/'); } catch (_) { } };
+  useEffect(() => { if (Datos.modo === 'firebase' && d.sesion && d.listo) ir(volver.startsWith('/') ? volver : '/'); }, [d.sesion && d.sesion.id, d.listo]);
+  if (Datos.modo === 'firebase') {
+    return <div className="pantalla contenedor grilla" style={{ paddingTop: 'clamp(48px, 8vw, 112px)' }}>
+      <div style={{ gridColumn: '1 / span 6' }} className="pila-3">
+        <h1 className="h1">Ingresa a Relevo.</h1>
+        <p className="texto secundario">Usa tu cuenta de Google. Si es tu correo de la universidad, quedas verificado al instante. Si no, el equipo verifica tu cuenta.</p>
+        <div><button className="boton boton-principal" onClick={() => acc.correr(() => Datos.iniciarSesion()).catch(() => {})} disabled={acc.cargando}>{acc.cargando ? 'Abriendo Google' : 'Continuar con Google'}</button></div>
+        {acc.cargando && <Arco texto="Esperando a Google" />}
+        <NotaError>{acc.error}</NotaError>
+        <p className="secundario pequeno">Solo guardamos tu nombre, tu correo y tu universidad. Lee el <A a="/privacidad">Aviso de privacidad</A>.</p>
+      </div>
+    </div>;
+  }
   const opciones = [['u-comprador', 'Comprador de prueba'], ['u-vendedor', 'Vendedor con correo institucional'], ['u-vendedora', 'Vendedora sin correo institucional'], ['u-equipo', 'Equipo de Relevo']];
   return <div className="pantalla contenedor grilla" style={{ paddingTop: 'clamp(48px, 8vw, 112px)' }}>
     <div style={{ gridColumn: '1 / span 6' }} className="pila-3">
@@ -371,7 +405,7 @@ function MisPedidos({ tipo }) {
           const pub = pubDe(p.pubId); const v = L.calcularVenta(p.precio, CFG);
           return <li key={p.id} className="fila">
             <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: 16, alignItems: 'start' }}>
-              <Cuadro cat={pub.categoria} foto={pub.fotos[0]} alt="" />
+              <Cuadro cat={pub.categoria} foto={portadaDe(pub)} alt="" />
               <div><p style={{ margin: 0, fontWeight: 500 }}>{pub.titulo}</p><p className="secundario pequeno" style={{ margin: '2px 0 8px' }}>Pedido {p.id} · {fechaCorta(p.creado)}</p><EstadoTexto estado={p.estado} /></div>
             </div>
             <div style={{ textAlign: 'right' }} className="pila">
@@ -425,6 +459,7 @@ function Pedido({ id }) {
   const [punto, setPunto] = useState('');
   const [horario, setHorario] = useState('');
   const [op, setOp] = useState('');
+  const [monto2, setMonto2] = useState('');
   if (!d.listo) return <Arco bloque />;
   if (!d.sesion) return <PideSesion texto="Inicia sesión para ver este pedido." volver={'/pedido/' + id} />;
   const original = d.pedidos.find(x => x.id === id);
@@ -432,7 +467,7 @@ function Pedido({ id }) {
   if (!original || !rol) return <div className="contenedor pantalla" style={{ paddingTop: 80 }}><Vacio titulo="No encontramos este pedido entre los tuyos." accion={<A a="/compras" className="boton">Ver mis compras</A>} /></div>;
   /* El comprador solo recibe los campos permitidos: nunca la comisión. */
   const p = rol === 'comprador' ? L.pedidoParaComprador(original) : original;
-  const pub = d.publicaciones.find(x => x.id === p.pubId) || { titulo: 'Material', categoria: 'instrumento', fotos: [], universidad: '' };
+  const pub = d.publicaciones.find(x => x.id === p.pubId) || { titulo: original.titulo || 'Material', categoria: 'instrumento', fotos: [], universidad: original.universidad || '' };
   const puntos = CFG.PUNTOS_ENTREGA[pub.universidad] || ['Patio de comidas de un centro comercial cercano', 'Cafetería concurrida cerca del campus'];
   const mover = async (estado, extra, msg) => { try { await acc.correr(() => Datos.moverPedido(id, estado, extra)); setReclamo(false); setConfirmar(false); avisar(msg); } catch (_) { } };
   const proponer = async e => { e.preventDefault(); try { await acc.correr(() => Datos.proponerEntrega(id, punto || p.entrega.punto, horario)); avisar('Propusiste el lugar y el horario de entrega.'); } catch (_) { } };
@@ -447,10 +482,12 @@ function Pedido({ id }) {
       <div style={{ gridColumn: '1 / span 6' }} className="pila-5">
         <div className="pila"><p className="etiqueta">{titulo} · {p.id}</p><h1 className="h2">{pub.titulo}</h1></div>
         <section aria-label="Estado del pedido"><LineaTiempo pedido={p} /></section>
+        {p.estado === 'en_reclamo' && !p.reclamo && <div className="nota"><strong>Reclamo abierto.</strong> El equipo lo está revisando y te escribirá. El dinero sigue retenido.</div>}
         {p.estado === 'en_reclamo' && p.reclamo && <div className="nota"><strong>Reclamo abierto.</strong> {(MOTIVOS.find(m => m[0] === p.reclamo.motivo) || [, 'Otro'])[1]}.{p.reclamo.detalle ? ' ' + p.reclamo.detalle : ''} El equipo te escribirá para resolverlo.</div>}
-        {rol === 'comprador' && p.estado === 'pago_pendiente' && <form className="pila-3" onSubmit={e => { e.preventDefault(); mover('pago_informado', { operacion: op.replace(/\s/g, '') }, 'Enviaste el número de operación.'); }} noValidate>
+        {rol === 'comprador' && p.estado === 'pago_pendiente' && <form className="pila-3" onSubmit={e => { e.preventDefault(); mover('pago_informado', { operacion: op.replace(/\s/g, ''), monto: monto2 }, 'Enviaste el número de operación.'); }} noValidate>
           <p className="nota">El equipo no pudo confirmar tu pago{(p.historial.slice(-1)[0] || {}).nota ? ': ' + p.historial.slice(-1)[0].nota : ''}. Revisa el número de operación en Yape y vuelve a enviarlo.</p>
           <Campo id="op2" etiqueta="Número de operación"><input id="op2" className="entrada" inputMode="numeric" value={op} onChange={e => setOp(e.target.value)} /></Campo>
+          <Campo id="monto2" etiqueta="Monto que enviaste"><div className="prefijo"><span aria-hidden="true">S/</span><input id="monto2" className="entrada" inputMode="decimal" value={monto2} onChange={e => setMonto2(e.target.value)} /></div></Campo>
           <button className="boton boton-principal" disabled={acc.cargando}>Informar mi pago</button>
         </form>}
         {rol === 'comprador' && p.estado === 'en_coordinacion' && <div className="pila">
@@ -465,7 +502,7 @@ function Pedido({ id }) {
       <div style={{ gridColumn: '8 / span 5' }} className="pila-5">
         <dl className="datos">
           {rol === 'comprador'
-            ? <><div><dt>Pagaste</dt><dd className="cifra">{L.soles(p.precio)}</dd></div><div><dt>Operación Yape</dt><dd>{p.operacion || 'Pendiente'}</dd></div></>
+            ? <><div><dt>Precio</dt><dd className="cifra">{L.soles(p.precio)}</dd></div><div><dt>Operación Yape</dt><dd>{p.operacion || 'Pendiente'}</dd></div>{p.montoInformado != null && <div><dt>Monto que informaste</dt><dd className="cifra">{L.soles(p.montoInformado)}</dd></div>}</>
             : <><div><dt>Precio</dt><dd className="cifra">{L.soles(p.precio)}</dd></div><div><dt>Comisión de Relevo</dt><dd className="cifra">{L.soles(CFG.COMISION_VENDEDOR)}</dd></div><div><dt>{p.estado === 'transferido' ? 'Recibiste' : 'Recibirás'}</dt><dd className="cifra" style={{ fontWeight: 500 }}>{L.soles(v.recibe)}</dd></div></>}
           <div><dt>Universidad</dt><dd>{pub.universidad}</dd></div>
         </dl>
@@ -505,7 +542,7 @@ function Equipo() {
   if (!d.sesion) return <PideSesion texto="Inicia sesión con una cuenta del equipo." volver="/equipo" />;
   if (!L.esEquipo(d.sesion, CFG)) return <div className="contenedor pantalla" style={{ paddingTop: 80 }}><Vacio titulo="Esta vista es solo para el equipo de Relevo." texto="Si eres del equipo, ingresa con tu cuenta autorizada." accion={<A a="/ingresar?volver=/equipo" className="boton">Cambiar de usuario</A>} /></div>;
 
-  const pub = id => d.publicaciones.find(x => x.id === id) || { titulo: '', categoria: 'instrumento', fotos: [] };
+  const pub = id => d.publicaciones.find(x => x.id === id) || { titulo: (d.pedidos.find(p => p.pubId === id) || {}).titulo || '', categoria: 'instrumento', fotos: [] };
   const usuario = id => d.usuarios.find(u => u.id === id) || { nombre: '', correo: '' };
   const deEstado = (...e) => d.pedidos.filter(p => e.includes(p.estado));
   const grupos = {
@@ -526,7 +563,7 @@ function Equipo() {
   };
   const lista = grupos[tab];
   const filaPedido = (p, extra, acciones) => {
-    const u = usuario(p.compradorId), vend = usuario(p.vendedorId);
+    const u = { nombre: p.compradorNombre || usuario(p.compradorId).nombre }, vend = { nombre: p.vendedorNombre || usuario(p.vendedorId).nombre };
     return <li key={p.id} className="fila">
       <div><p className="etiqueta">{p.id} · {fechaHora(p.creado)}</p><p className="h3" style={{ marginTop: 4 }}>{pub(p.pubId).titulo}</p>
         <p className="secundario pequeno" style={{ margin: '4px 0 0' }}>Compra {u.nombre} · Vende {vend.nombre}</p>{extra}</div>
@@ -550,17 +587,17 @@ function Equipo() {
           return <li key={p.id} className="fila">
             <div><p className="etiqueta">{categoria(p.categoria).nombre} · enviada {fechaHora(p.creado)}</p><p className="h3" style={{ marginTop: 4 }}>{p.titulo}</p>
               <p className="secundario pequeno" style={{ margin: '4px 0 0' }}>{v.nombre} · {L.vendedorVerificado(v, CFG) ? 'Vendedor verificado' : 'Vendedor sin verificar'} · {L.soles(p.precio)} · código esperado {p.codigo}</p>
-              <div className="miniaturas">{p.fotos.map((f, i) => <div key={i} style={{ width: 88 }}><Cuadro cat={p.categoria} foto={f} alt={f.angulo} /><p className="secundario" style={{ fontSize: 12, lineHeight: '16px', margin: '4px 0 0' }}>{f.angulo}</p></div>)}</div></div>
+              <FotosRevision p={p} /></div>
             <div className="acciones"><button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.aprobarPublicacion(p.id), 'Publicación aprobada con foto verificada.')}>Aprobar con foto verificada</button><button className="enlace enlace-secundario" onClick={() => setRechazo({ tipo: 'pub', id: p.id })}>Rechazar</button></div>
           </li>;
         })}
-        {tab === 'pagos' && lista.map(p => filaPedido(p, <dl className="datos" style={{ marginTop: 16, maxWidth: 420 }}><div><dt>Operación</dt><dd>{p.operacion}</dd></div><div><dt>Monto esperado</dt><dd className="cifra">{L.soles(p.precio)}</dd></div></dl>,
+        {tab === 'pagos' && lista.map(p => filaPedido(p, <dl className="datos" style={{ marginTop: 16, maxWidth: 420 }}><div><dt>Operación</dt><dd>{p.operacion}</dd></div><div><dt>Monto esperado</dt><dd className="cifra">{L.soles(p.precio)}</dd></div>{p.montoInformado != null && <div><dt>Monto informado</dt><dd className="cifra">{L.soles(p.montoInformado)}{p.montoInformado !== p.precio ? <strong> · no coincide</strong> : ''}</dd></div>}</dl>,
           <><button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'pago_confirmado'), 'Pago confirmado. El dinero queda retenido.')}>Confirmar pago</button><button className="enlace enlace-secundario" onClick={() => setRechazo({ tipo: 'pago', id: p.id })}>Rechazar</button></>))}
         {tab === 'entregas' && lista.map(p => filaPedido(p, <p className="pequeno" style={{ margin: '8px 0 0' }}><EstadoTexto estado={p.estado} />{p.entrega.punto ? ' · ' + p.entrega.punto : ''}</p>,
           p.estado === 'pago_confirmado'
             ? <button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'en_coordinacion'), 'Pedido en coordinación.')}>Pasar a coordinación</button>
             : <><A a={'/pedido/' + p.id} className="enlace">Ver pedido</A><button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'entregado'), 'Entrega registrada.')}>Marcar entregado</button></>))}
-        {tab === 'transferencias' && lista.map(p => filaPedido(p, <dl className="datos" style={{ marginTop: 16, maxWidth: 420 }}><div><dt>Precio</dt><dd className="cifra">{L.soles(p.precio)}</dd></div><div><dt>Comisión</dt><dd className="cifra">{L.soles(CFG.COMISION_VENDEDOR)}</dd></div><div><dt>Transferir a {usuario(p.vendedorId).nombre}</dt><dd className="cifra" style={{ fontWeight: 500 }}>{L.soles(L.calcularVenta(p.precio, CFG).recibe)}</dd></div></dl>,
+        {tab === 'transferencias' && lista.map(p => filaPedido(p, <dl className="datos" style={{ marginTop: 16, maxWidth: 420 }}><div><dt>Precio</dt><dd className="cifra">{L.soles(p.precio)}</dd></div><div><dt>Comisión</dt><dd className="cifra">{L.soles(CFG.COMISION_VENDEDOR)}</dd></div><div><dt>Transferir a {p.vendedorNombre || usuario(p.vendedorId).nombre}</dt><dd className="cifra" style={{ fontWeight: 500 }}>{L.soles(L.calcularVenta(p.precio, CFG).recibe)}</dd></div></dl>,
           <button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'transferido'), 'Transferencia registrada.')}>Marcar transferido</button>))}
         {tab === 'reclamos' && lista.map(p => filaPedido(p, <p className="pequeno" style={{ margin: '8px 0 0' }}>{(MOTIVOS.find(m => m[0] === (p.reclamo || {}).motivo) || [, 'Otro'])[1]}{p.reclamo && p.reclamo.detalle ? ': ' + p.reclamo.detalle : ''}</p>,
           <><button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'en_coordinacion'), 'El pedido volvió a coordinación.')}>Volver a coordinación</button>
@@ -580,6 +617,15 @@ function Equipo() {
       </form>
     </Dialogo>}
   </div>;
+}
+
+/* Fotos de una publicación en revisión, con su ángulo y la hora de subida. */
+function FotosRevision({ p }) {
+  const fotos = useFotos(p) || p.fotos;
+  return <div className="miniaturas">{fotos.map((f, i) => <div key={i} style={{ width: 120 }}>
+    <Cuadro cat={p.categoria} foto={f} alt={f.angulo} />
+    <p className="secundario" style={{ fontSize: 12, lineHeight: '16px', margin: '4px 0 0' }}>{f.angulo}{f.fecha ? ' · ' + fechaHora(f.fecha) : ''}</p>
+  </div>)}</div>;
 }
 
 /* ---------- Experimento A/B de fotos: /experimento/fotos?orden=AB o ?orden=BA. No guarda datos. ---------- */

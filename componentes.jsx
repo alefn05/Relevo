@@ -2,6 +2,8 @@
 const { useState, useEffect, useMemo, useRef, useCallback, createContext, useContext } = React;
 const CFG = window.RELEVO_CONFIG;
 const L = window.RelevoLogica;
+/* Prefijo de archivos estáticos: '' en la demo, '../' en /piloto/. */
+const RAIZ = CFG.RAIZ || '';
 
 /* Modo entrevista: config.js, con opción de forzarlo desde la URL (?entrevista=1 o ?entrevista=0). */
 const ENTREVISTA = (() => {
@@ -50,6 +52,7 @@ function ProveedorAviso({ children }) {
 /* ---------- Utilidades ---------- */
 const fechaCorta = iso => iso ? new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '';
 const fechaHora = iso => iso ? new Date(iso).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+const portadaDe = p => p.portada ? { src: p.portada, angulo: (p.fotos[0] || {}).angulo } : p.fotos[0];
 const categoria = id => CFG.CATEGORIAS.find(c => c.id === id) || { id, nombre: 'Material', angulos: [] };
 const primerNombre = n => (n || '').split(' ')[0];
 const universidades = () => [...new Set(Object.values(CFG.DOMINIOS_INSTITUCIONALES))];
@@ -61,6 +64,44 @@ function usarAccion() {
     try { return await fn(); } catch (e) { setError(e.message); throw e; } finally { setCargando(false); }
   };
   return { cargando, error, setError, correr };
+}
+
+/* ---------- Movimiento de presentación ---------- */
+/* Retraso escalonado para apariciones en grupo, con tope para que nada espere demasiado. */
+const retraso = i => ({ '--retraso': Math.min(i, 7) * 90 + 'ms' });
+const sinMovimiento = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Observa los elementos .revelar que aparecen en la página y los muestra al entrar en pantalla. */
+function useRevelar() {
+  useEffect(() => {
+    if (!('IntersectionObserver' in window) || sinMovimiento()) return;
+    document.documentElement.classList.add('con-movimiento');
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -6% 0px', threshold: 0.08 });
+    const ver = () => document.querySelectorAll('.revelar:not([data-obs])').forEach(el => { el.setAttribute('data-obs', ''); io.observe(el); });
+    ver();
+    const mo = new MutationObserver(ver);
+    mo.observe(document.getElementById('raiz'), { childList: true, subtree: true });
+    /* Respaldo: si el navegador no dispara el observador, nada queda oculto en pantalla. */
+    const respaldo = setInterval(() => document.querySelectorAll('.revelar:not(.visible)').forEach(el => { if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('visible'); }), 1500);
+    return () => { io.disconnect(); mo.disconnect(); clearInterval(respaldo); };
+  }, []);
+}
+
+/* Progreso de 0 a 1 de un elemento mientras cruza la pantalla, para el recorrido con scroll. */
+function useProgreso(ref) {
+  const [p, setP] = useState(() => sinMovimiento() ? 1 : 0);
+  useEffect(() => {
+    if (sinMovimiento()) return;
+    const medir = () => {
+      const el = ref.current; if (!el) return;
+      const r = el.getBoundingClientRect(), vh = window.innerHeight;
+      setP(Math.round(Math.max(0, Math.min(1, (vh * 0.7 - r.top) / Math.max(1, r.height))) * 1000) / 1000);
+    };
+    medir();
+    window.addEventListener('scroll', medir, { passive: true }); window.addEventListener('resize', medir);
+    return () => { window.removeEventListener('scroll', medir); window.removeEventListener('resize', medir); };
+  }, []);
+  return p;
 }
 
 /* ---------- Ilustraciones de objetos: recuadros en niebla para los ejemplos sin foto real ---------- */

@@ -8,13 +8,20 @@ Sitio publicado: https://alefn05.github.io/Relevo/
 
 Todo funciona en el navegador con datos de ejemplo claramente falsos. No hay servidor ni base de datos: lo que se hace en la demo se borra al recargar. El inicio de sesión se simula con usuarios de prueba.
 
+## Fase B: piloto con pagos reales
+
+Vive en `https://alefn05.github.io/Relevo/piloto/` y usa el mismo código que la demo, con `MODO_DATOS: 'firebase'` (ver `piloto/config-piloto.js`). Inicio de sesión con Google, Firestore para usuarios, publicaciones, pedidos y reclamos, y reglas de seguridad en `firestore.rules`. Las fotos se guardan reducidas dentro de Firestore. La configuración paso a paso está en [GUIA_FIREBASE.md](GUIA_FIREBASE.md).
+
 ## Archivos
 
 | Archivo | Qué contiene |
 |---|---|
 | `config.js` | Todas las constantes que el equipo puede cambiar |
 | `logica.js` | Reglas de negocio sin interfaz: comisión, estados, permisos, código del día, CSV |
-| `datos.js` | Datos de ejemplo en memoria (Fase A). En la Fase B se conecta Firebase aquí |
+| `datos.js` | Datos de ejemplo en memoria (Fase A) y selector de modo |
+| `datos-firebase.js` | Datos del piloto con Firestore y Google (Fase B) |
+| `piloto/` | Página y configuración del piloto |
+| `firestore.rules`, `pruebas-reglas/` | Reglas de seguridad y sus pruebas con el emulador |
 | `componentes.jsx` | Componentes base del manual: hilo, punto testigo, arco, esquinas, línea de tiempo |
 | `pantallas.jsx` | Pantallas: inicio, explorar, material, pago, publicar, pedidos, panel, experimento, legales |
 | `app.jsx` | Cabecera, rutas y pie |

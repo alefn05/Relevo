@@ -8,7 +8,7 @@ function Cabecera({ ruta, limpio }) {
   const volver = ruta.ruta === '/ingresar' ? (ruta.query.get('volver') || '/') : ruta.ruta;
   return <header className="cabecera">
     <div className="contenedor">
-      <A a="/" className="logo" aria-label="relevo, ir al inicio"><img src="assets/marca/relevo_wordmark_color.svg" alt="relevo" width="112" height="33" /></A>
+      <A a="/" className="logo" aria-label="relevo, ir al inicio"><img src={RAIZ + "assets/marca/relevo_wordmark_color.svg"} alt="relevo" width="112" height="33" /></A>
       {!limpio && <>
         <button className="boton-icono boton-menu" aria-expanded={abierto} aria-controls="navegacion" aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'} onClick={() => setAbierto(!abierto)}>
           <svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true">{abierto ? <path d="M4 1l14 12M18 1L4 13" stroke="#1E2024" strokeWidth="1.2" /> : <path d="M1 3h20M1 11h20" stroke="#1E2024" strokeWidth="1.2" />}</svg>
@@ -51,6 +51,7 @@ function Rutas({ ruta }) {
 
 function App() {
   const ruta = useRuta();
+  useRevelar();
   const limpio = ruta.partes[0] === 'experimento';
   useEffect(() => {
     const titulos = { explorar: 'Explorar', publicar: 'Publicar', compras: 'Mis compras', ventas: 'Mis ventas', equipo: 'Panel del equipo', pago: 'Pago', pedido: 'Pedido', ingresar: 'Ingresar', terminos: 'Términos de uso', devoluciones: 'Devolución y reclamos', privacidad: 'Privacidad', experimento: 'Publicaciones' };
