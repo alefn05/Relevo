@@ -64,16 +64,20 @@
     /* Publicaciones aprobadas: visibles para todos, con o sin sesión. */
     mirar(db.collection('publicaciones').where('revision', '==', 'aprobada'), 'aprobadas');
 
+    /* Crea el perfil si todavía no existe (por ejemplo, si al ingresar las reglas aún no lo permitían). */
+    async function asegurarPerfil(u) {
+      const ref = db.collection('usuarios').doc(u.uid);
+      const d = await ref.get();
+      if (!d.exists) await ref.set({ nombre: u.displayName || 'Estudiante', correo: (u.email || '').toLowerCase(), universidad: L.universidadPorCorreo(u.email, cfg), aceptoTerminos: false, aprobadoPorEquipo: false, creado: new Date().toISOString(), creadoServidor: servidor() });
+    }
+
     let quitar = [];
     auth.onAuthStateChanged(async u => {
       quitar.forEach(q => q()); quitar = [];
       Object.assign(f, { mias: [], revision: [], compras: [], ventas: [], todos: [], usuarios: [], reclamos: [], yo: null });
       if (!u) { estado = { ...estado, sesionId: null }; authListo = true; recalcular(); return; }
       const ref = db.collection('usuarios').doc(u.uid);
-      try {
-        const d = await ref.get();
-        if (!d.exists) await ref.set({ nombre: u.displayName || 'Estudiante', correo: (u.email || '').toLowerCase(), universidad: L.universidadPorCorreo(u.email, cfg), aceptoTerminos: false, aprobadoPorEquipo: false, creado: new Date().toISOString(), creadoServidor: servidor() });
-      } catch (e) { console.warn('usuario', e.code); }
+      try { await asegurarPerfil(u); } catch (e) { console.warn('usuario', e.code); }
       /* Perfil mínimo a partir de Google: la sesión funciona aunque el perfil de Firestore no se pueda leer. */
       const basico = { id: u.uid, nombre: u.displayName || 'Estudiante', correo: (u.email || '').toLowerCase(), universidad: L.universidadPorCorreo(u.email, cfg), aceptoTerminos: false, aprobadoPorEquipo: false, foto: u.photoURL || '' };
       const rol = L.esEquipo({ correo: u.email }, cfg) ? 'equipo' : 'estudiante';
@@ -124,6 +128,7 @@
         const datos = { ...form, aceptoTerminos: form.aceptoTerminos || u.aceptoTerminos };
         const errores = L.validarPublicacion(datos, cfg);
         if (Object.keys(errores).length) { const e = new Error('Revisa los campos marcados.'); e.campos = errores; throw e; }
+        await asegurarPerfil(auth.currentUser);
         const fotos = await Promise.all(form.fotos.map(async x => ({ angulo: x.angulo, fecha: x.fecha, src: await reducir(x.src, 1000, 0.62) })));
         const portada = await reducir(form.fotos[0].src, 480, 0.6);
         const ref = db.collection('publicaciones').doc();
@@ -149,6 +154,7 @@
         if (!p || p.revision !== 'aprobada' || p.retirada) throw new Error('Este material ya no está disponible.');
         if (p.vendedorId === u.id) throw new Error('No puedes comprar tu propia publicación.');
         if (p.pedidoActivo) throw new Error('Otra persona ya está comprando este material.');
+        await asegurarPerfil(auth.currentUser);
         const ref = db.collection('pedidos').doc();
         const base = L.nuevoPedido({ id: pubId, precio: p.precio, vendedorId: p.vendedorId }, u.id, operacion, null, monto);
         const pedido = {
