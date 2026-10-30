@@ -311,8 +311,10 @@ function Publicar() {
         <div className="calculo" id="p-calculo" aria-live="polite">
           <p className="etiqueta">Recibirás</p>
           <p className="recibe">{venta.valido ? L.soles(venta.recibe) : 'S/ 0.00'}</p>
-          <p className="secundario pequeno" style={{ marginTop: 8 }}>Relevo cobra {L.soles(CFG.COMISION_VENDEDOR)} fijos por venta completada.{venta.valido ? ' Recibirás ' + L.soles(venta.recibe) + '. La comisión representa el ' + venta.porcentaje + ' % del precio.' : ''}</p>
-          {venta.valido && venta.aviso && <p className="pequeno" style={{ marginTop: 8, fontWeight: 500 }}>{venta.aviso}</p>}
+          <p className="secundario pequeno" style={{ marginTop: 8 }}>Relevo cobra {L.soles(CFG.COMISION_VENDEDOR)} fijos por venta completada.{venta.valido ? ' Recibirás ' + L.soles(venta.recibe) + '.' : ''}</p>
+          {venta.valido && (venta.aviso
+            ? <p className="pequeno" style={{ marginTop: 8, fontWeight: 500 }}>{venta.aviso}</p>
+            : <p className="secundario pequeno" style={{ marginTop: 8 }}>La comisión equivale al {venta.porcentaje} % del precio.</p>)}
           <p className="secundario pequeno" style={{ marginTop: 8 }}>Quien compra paga solo el precio publicado.</p>
         </div>
       </>)}

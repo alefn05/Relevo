@@ -93,7 +93,7 @@ main { min-height: 70vh; padding-bottom: var(--e16); }
   .cabecera .contenedor { height: 64px; }
   .logo img { width: 110px; }
   .boton-icono.boton-menu { display: inline-flex; }
-  .nav-envoltura { position: fixed; inset: 64px 0 auto 0; background: var(--hueso); border-bottom: 1px solid var(--niebla); padding: var(--e2) var(--margen) var(--e3); transform-origin: top; animation: menu var(--t-medio) var(--salida) both; }
+  .nav-envoltura { position: absolute; top: 100%; left: 0; right: 0; max-height: calc(100vh - 64px); overflow-y: auto; background: var(--hueso); border-bottom: 1px solid var(--niebla); padding: var(--e2) var(--margen) var(--e3); transform-origin: top; animation: menu var(--t-medio) var(--salida) both; }
   .nav-envoltura:not(.abierto) { display: none; }
   .nav, .nav-sesion { flex-direction: column; align-items: stretch; gap: 0; }
   .nav a, .nav-sesion > * { min-height: 52px; border-bottom: 1px solid var(--niebla); justify-content: flex-start; }
@@ -312,4 +312,12 @@ select.entrada { appearance: none; padding-right: 44px; background-image: url("d
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
   .arco svg { animation: none; }
+}
+
+@media (max-width: 520px) {
+  .display { font-size: 42px; line-height: 46px; }
+  .h1 { font-size: 36px; line-height: 42px; }
+  .aviso-demo { font-size: 13px; line-height: 18px; }
+  .aviso-demo .contenedor { gap: 2px 12px; padding-top: 8px; padding-bottom: 8px; }
+  .codigo-dia { font-size: 52px; line-height: 56px; }
 }
