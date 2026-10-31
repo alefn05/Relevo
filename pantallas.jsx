@@ -288,6 +288,68 @@ function Ingresar({ ruta }) {
   </div>;
 }
 
+/* ---------- Verificar el correo universitario ---------- */
+function Verificar() {
+  const d = useDatos();
+  const acc = usarAccion();
+  const [correo, setCorreo] = useState('');
+  const [error, setError] = useState('');
+  const [enviado, setEnviado] = useState('');
+  const [pide, setPide] = useState(false);
+  const [hecho, setHecho] = useState(null);
+  const enlace = Datos.hayEnlaceVerificacion();
+  const completar = async c => { try { setHecho(await acc.correr(() => Datos.completarVerificacion(c))); } catch (e) { if (e.pideCorreo) setPide(true); } };
+  useEffect(() => { if (enlace && d.listo && d.sesion && !hecho && !acc.cargando && !acc.error) completar(); }, [enlace, d.listo, d.sesion && d.sesion.id]);
+  if (!d.listo) return <Arco bloque />;
+  if (!d.sesion) return <PideSesion texto={enlace ? 'Ingresa con tu cuenta para terminar de verificar tu correo.' : 'Inicia sesión para verificar tu correo universitario.'} volver="/verificar" />;
+  const yaTiene = d.sesion.correoUniversitario || (L.universidadPorCorreo(d.sesion.correo, CFG) ? d.sesion.correo : '');
+  const marco = hijos => <div className="pantalla contenedor grilla" style={{ paddingTop: 'clamp(48px, 8vw, 112px)' }}><div style={{ gridColumn: '1 / span 6' }} className="pila-3">{hijos}</div></div>;
+
+  if (hecho || (yaTiene && !enlace)) return marco(<>
+    <div className="exito"><span className="testigo" aria-hidden="true" /><h1 className="h2">Tu correo universitario está verificado.</h1></div>
+    <p className="texto secundario">{(hecho && hecho.correo) || yaTiene} · {(hecho && hecho.universidad) || L.universidadPorCorreo(yaTiene, CFG)}. Ahora apareces como vendedor verificado en tus publicaciones.</p>
+    <div className="acciones"><A a="/publicar" className="boton boton-principal">Publicar mi material</A><A a="/explorar" className="enlace">Explorar materiales</A></div>
+  </>);
+
+  if (enlace) return marco(<>
+    <h1 className="h1">Verificando tu correo.</h1>
+    {acc.cargando && <Arco texto="Comprobando el enlace" />}
+    {pide && <form className="pila-3" onSubmit={e => { e.preventDefault(); completar(correo); }} noValidate>
+      <p className="texto secundario">Abriste el enlace en otro navegador. Escribe el correo universitario al que llegó para terminar.</p>
+      <Campo id="v-correo2" etiqueta="Correo universitario"><input id="v-correo2" className="entrada" type="email" autoComplete="email" value={correo} onChange={e => setCorreo(e.target.value)} /></Campo>
+      <div><button className="boton boton-principal" disabled={acc.cargando}>Terminar verificación</button></div>
+    </form>}
+    {!pide && <NotaError>{acc.error}</NotaError>}
+    {!acc.cargando && acc.error && !pide && <div><button className="boton" onClick={() => { history.replaceState(null, '', location.pathname + '#/verificar'); location.reload(); }}>Pedir un enlace nuevo</button></div>}
+  </>);
+
+  if (enviado) return marco(<>
+    <div className="exito"><span className="testigo" aria-hidden="true" /><h1 className="h2">Revisa tu correo.</h1></div>
+    <p className="texto secundario">Te enviamos un enlace a <strong>{enviado}</strong>. Ábrelo en este mismo navegador para terminar. Si no llega en unos minutos, revisa la carpeta de correo no deseado.</p>
+    <div><button className="enlace" onClick={() => setEnviado('')}>Usar otro correo</button></div>
+  </>);
+
+  const enviar = async e => {
+    e.preventDefault(); setError('');
+    const c = correo.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+$/.test(c)) { setError('Escribe un correo válido.'); return; }
+    if (!L.universidadPorCorreo(c, CFG)) { setError('Ese correo no es de una universidad de la lista. Usa el correo que te dio tu universidad.'); return; }
+    try { const r = await acc.correr(() => Datos.enviarVerificacion(c)); if (r && r.demo) setHecho({ correo: c, universidad: L.universidadPorCorreo(c, CFG) }); else setEnviado(c); } catch (_) { }
+  };
+  return marco(<>
+    <h1 className="h1">Verifica tu correo universitario.</h1>
+    <p className="texto secundario">Te enviamos un enlace a tu correo de la universidad. Al abrirlo, apareces como vendedor verificado. Tu cuenta de Google no cambia.</p>
+    <form className="pila-3" onSubmit={enviar} noValidate>
+      <Campo id="v-correo" etiqueta="Correo universitario" ayuda={'Universidades aceptadas: ' + universidades().join(', ') + '.'} error={error}>
+        <input id="v-correo" className="entrada" type="email" autoComplete="email" inputMode="email" value={correo} onChange={e => setCorreo(e.target.value)} placeholder="tucodigo@upc.edu.pe" aria-invalid={!!error} />
+      </Campo>
+      <NotaError>{acc.error}</NotaError>
+      <div className="acciones"><button className="boton boton-principal" disabled={acc.cargando}>{acc.cargando ? 'Enviando' : 'Enviar enlace'}</button>{acc.cargando && <Arco texto="Enviando" />}</div>
+    </form>
+    {Datos.modo === 'demo' && <p className="secundario pequeno">En la demostración no se envía ningún correo: la verificación se simula al instante.</p>}
+  </>);
+}
+
 function PideSesion({ texto, volver }) {
   return <div className="contenedor pantalla" style={{ paddingTop: 80 }}><Vacio titulo={texto} accion={<A a={'/ingresar?volver=' + volver} className="boton boton-principal">Iniciar sesión</A>} /></div>;
 }
@@ -344,7 +406,7 @@ function Publicar() {
       <div style={{ gridColumn: '1 / span 7' }} className="pila">
         <h1 className="h1">Publica tu material en dos minutos.</h1>
         <p className="texto secundario">Tú pones el precio. Las fotos se toman con el código del día para que quien compre sepa que el objeto existe y es tuyo.</p>
-        {!verificado && <p className="nota">Tu correo no es institucional. Puedes publicar igual: el equipo verificará tu cuenta antes de aprobar.</p>}
+        {!verificado && <p className="nota">Todavía no apareces como vendedor verificado. <A a="/verificar">Verifica tu correo universitario</A> o publica igual: el equipo revisará tu cuenta.</p>}
       </div>
     </div>
     <form onSubmit={enviar} noValidate>

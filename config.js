@@ -37,7 +37,8 @@ window.RELEVO_CONFIG = {
     'utp.edu.pe': 'UTP',
     'usmp.pe': 'USMP',
     'upn.pe': 'UPN',
-    'urp.edu.pe': 'URP'
+    'urp.edu.pe': 'URP',
+    'cientifica.edu.pe': 'Universidad Científica del Sur'
   },
 
   /* Puntos de entrega sugeridos por universidad: siempre lugares públicos y concurridos, fuera del campus.
@@ -52,7 +53,8 @@ window.RELEVO_CONFIG = {
     'UTP': ['Patio de comidas del centro comercial más cercano', 'Cafetería frente a la sede', 'Exterior de la puerta principal, en horario de clases'],
     'USMP': ['Patio de comidas del centro comercial más cercano', 'Cafetería frente al campus', 'Exterior de la puerta principal, en horario de clases'],
     'UPN': ['Patio de comidas del centro comercial más cercano', 'Cafetería frente a la sede', 'Exterior de la puerta principal, en horario de clases'],
-    'URP': ['Patio de comidas del centro comercial más cercano', 'Cafetería frente al campus', 'Exterior de la puerta principal, en horario de clases']
+    'URP': ['Patio de comidas del centro comercial más cercano', 'Cafetería frente al campus', 'Exterior de la puerta principal, en horario de clases'],
+    'Universidad Científica del Sur': ['Patio de comidas del centro comercial más cercano', 'Cafetería frente al campus', 'Exterior de la puerta principal, en horario de clases']
   },
 
   /* Categorías y ángulos guiados de la foto verificada: una foto por ángulo. */

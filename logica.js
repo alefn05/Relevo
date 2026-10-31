@@ -112,8 +112,9 @@
   /* ---------- Usuarios y permisos ---------- */
   const dominio = correo => ((correo || '').trim().toLowerCase().split('@')[1] || '');
   function universidadPorCorreo(correo, cfg) { return cfg.DOMINIOS_INSTITUCIONALES[dominio(correo)] || ''; }
-  /* Verificado solo con correo institucional o aprobación del equipo. */
-  function vendedorVerificado(u, cfg) { return !!u && (!!universidadPorCorreo(u.correo, cfg) || u.aprobadoPorEquipo === true); }
+  /* Verificado solo con correo institucional (de la cuenta o comprobado por enlace) o aprobación del equipo. */
+  /* correoUniversitario solo se guarda cuando el estudiante abrió el enlace enviado a ese correo. */
+  function vendedorVerificado(u, cfg) { return !!u && (!!universidadPorCorreo(u.correo, cfg) || !!universidadPorCorreo(u.correoUniversitario, cfg) || u.aprobadoPorEquipo === true); }
   function esEquipo(u, cfg) {
     if (!u) return false;
     if (cfg.MODO_DATOS === 'demo' && u.rol === 'equipo') return true;

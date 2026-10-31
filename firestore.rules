@@ -18,7 +18,7 @@ service cloud.firestore {
     // Mismos dominios que DOMINIOS_INSTITUCIONALES en config.js.
     function esInstitucional() {
       return conSesion() && request.auth.token.email_verified == true
-        && correo().matches('.*@(upc[.]edu[.]pe|pucp[.]edu[.]pe|aloe[.]ulima[.]edu[.]pe|ulima[.]edu[.]pe|alum[.]up[.]edu[.]pe|unmsm[.]edu[.]pe|uni[.]pe|utp[.]edu[.]pe|usmp[.]pe|upn[.]pe|urp[.]edu[.]pe)');
+        && correo().matches('.*@(upc[.]edu[.]pe|pucp[.]edu[.]pe|aloe[.]ulima[.]edu[.]pe|ulima[.]edu[.]pe|alum[.]up[.]edu[.]pe|unmsm[.]edu[.]pe|uni[.]pe|utp[.]edu[.]pe|usmp[.]pe|upn[.]pe|urp[.]edu[.]pe|cientifica[.]edu[.]pe)');
     }
     function nuevo() { return request.resource.data; }
     function actual() { return resource.data; }
@@ -33,8 +33,25 @@ service cloud.firestore {
         && nuevo().correo == correo()
         && nuevo().keys().hasOnly(['nombre', 'correo', 'universidad', 'aceptoTerminos', 'aprobadoPorEquipo', 'creado', 'creadoServidor']);
       allow update: if esAdmin()
-        || (conSesion() && uid() == id && soloCambia(['aceptoTerminos', 'nombre']));
+        || (conSesion() && uid() == id && soloCambia(['aceptoTerminos', 'nombre']))
+        // Correo universitario: solo con un comprobante creado por quien abrió el enlace de ese correo.
+        || (conSesion() && uid() == id
+            && soloCambia(['correoUniversitario', 'universidad', 'verificacionUniversitaria'])
+            && get(/databases/$(database)/documents/verificaciones/$(nuevo().verificacionUniversitaria)).data.uid == uid()
+            && get(/databases/$(database)/documents/verificaciones/$(nuevo().verificacionUniversitaria)).data.correo == nuevo().correoUniversitario);
       allow delete: if false;
+    }
+
+    // ---------- Comprobantes de correo universitario ----------
+    // Los crea la sesión secundaria que entró con el enlace enviado a ese correo. El id es esa sesión,
+    // así cada correo universitario queda ligado a una sola cuenta de Relevo y no se puede reasignar.
+    match /verificaciones/{vid} {
+      allow read: if conSesion() && (uid() == vid || esAdmin());
+      allow create: if conSesion() && uid() == vid && esInstitucional()
+        && nuevo().correo == correo()
+        && nuevo().uid is string
+        && nuevo().keys().hasOnly(['uid', 'correo', 'creado']);
+      allow update, delete: if false;
     }
 
     // ---------- Publicaciones: las aprobadas son públicas ----------
@@ -56,7 +73,8 @@ service cloud.firestore {
         && nuevo().portada is string && nuevo().portada.size() < 120000
         && (nuevo().vendedorVerificado == false
             || esInstitucional()
-            || get(/databases/$(database)/documents/usuarios/$(uid())).data.aprobadoPorEquipo == true);
+            || get(/databases/$(database)/documents/usuarios/$(uid())).data.aprobadoPorEquipo == true
+            || get(/databases/$(database)/documents/usuarios/$(uid())).data.get('correoUniversitario', '') != '');
 
       allow update: if esAdmin()
         // El vendedor solo puede retirar su publicación.

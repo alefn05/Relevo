@@ -4,7 +4,7 @@ function Cabecera({ ruta, limpio }) {
   const [abierto, setAbierto] = useState(false);
   useEffect(() => setAbierto(false), [ruta.ruta]);
   const actual = '/' + (ruta.partes[0] || '');
-  const enlaces = [['/', 'Inicio'], ['/explorar', 'Explorar'], ['/publicar', 'Publicar'], ['/compras', 'Mis compras'], ['/ventas', 'Mis ventas'], ...(L.esEquipo(d.sesion, CFG) ? [['/equipo', 'Equipo']] : [])];
+  const enlaces = [['/', 'Inicio'], ['/explorar', 'Explorar'], ['/publicar', 'Publicar'], ['/compras', 'Mis compras'], ['/ventas', 'Mis ventas'], ...(L.esEquipo(d.sesion, CFG) ? [['/equipo', 'Equipo']] : []), ...(d.sesion && !L.vendedorVerificado(d.sesion, CFG) ? [['/verificar', 'Verificar correo']] : [])];
   const volver = ruta.ruta === '/ingresar' ? (ruta.query.get('volver') || '/') : ruta.ruta;
   return <header className="cabecera">
     <div className="contenedor">
@@ -44,6 +44,7 @@ function Rutas({ ruta }) {
   if (a === 'compras' || a === 'ventas') return <MisPedidos tipo={a} key={a} />;
   if (a === 'pedido' && b) return <Pedido id={b} key={b} />;
   if (a === 'equipo') return <Equipo />;
+  if (a === 'verificar') return <Verificar />;
   if (a === 'experimento' && b === 'fotos') return <Experimento ruta={ruta} />;
   if (['terminos', 'devoluciones', 'privacidad'].includes(a)) return <Legal cual={a} key={a} />;
   return <NoEncontrado />;
@@ -53,8 +54,10 @@ function App() {
   const ruta = useRuta();
   useRevelar();
   const limpio = ruta.partes[0] === 'experimento';
+  /* El enlace del correo universitario llega con ?verificar=1: se abre la pantalla que lo completa. */
+  useEffect(() => { if (/[?&]verificar=1/.test(location.search) && ruta.partes[0] !== 'verificar') ir('/verificar'); }, []);
   useEffect(() => {
-    const titulos = { explorar: 'Explorar', publicar: 'Publicar', compras: 'Mis compras', ventas: 'Mis ventas', equipo: 'Panel del equipo', pago: 'Pago', pedido: 'Pedido', ingresar: 'Ingresar', terminos: 'Términos de uso', devoluciones: 'Devolución y reclamos', privacidad: 'Privacidad', experimento: 'Publicaciones' };
+    const titulos = { explorar: 'Explorar', publicar: 'Publicar', compras: 'Mis compras', ventas: 'Mis ventas', equipo: 'Panel del equipo', pago: 'Pago', pedido: 'Pedido', ingresar: 'Ingresar', verificar: 'Verificar correo', terminos: 'Términos de uso', devoluciones: 'Devolución y reclamos', privacidad: 'Privacidad', experimento: 'Publicaciones' };
     const t = titulos[ruta.partes[0]];
     document.title = t ? t + ' · Relevo' : 'Relevo · Publica en dos minutos. Encuentra a quien lo necesita.';
   }, [ruta.ruta]);

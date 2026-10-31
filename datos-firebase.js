@@ -98,6 +98,20 @@
       estado = { ...estado, sesionId: u.uid }; authListo = true; recalcular();
     });
 
+    /* Sesión secundaria solo para comprobar el correo universitario: así nunca cambia el correo de la cuenta de Google. */
+    const CLAVE_CORREO = 'relevoCorreoUniversitario';
+    let secundaria = null;
+    const verificador = () => {
+      if (!secundaria) {
+        secundaria = firebase.apps.find(a => a.name === 'verificador') || firebase.initializeApp(cfg.FIREBASE, 'verificador');
+        secundaria.auth().setPersistence(firebase.auth.Auth.Persistence.NONE).catch(() => {});
+        secundaria.auth().languageCode = 'es';
+      }
+      return secundaria;
+    };
+    const guardar = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (_) { } };
+    const leerGuardado = k => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } };
+
     const sesion = () => (f.yo && auth.currentUser) ? f.yo : null;
     const exigirSesion = () => { const u = sesion(); if (!u) throw new Error('Inicia sesión para continuar.'); return u; };
     const exigirEquipo = () => { const u = exigirSesion(); if (!L.esEquipo(u, cfg)) throw new Error('Solo el equipo de Relevo puede hacer esto.'); return u; };
@@ -195,6 +209,38 @@
         if (!L.rolEnPedido(u, p, cfg)) throw new Error('Este pedido no es tuyo.');
         if (!punto) throw new Error('Elige un punto de entrega.');
         await db.collection('pedidos').doc(id).update({ entrega: { punto, horario: horario || '', propuestoPor: u.id, fecha: new Date().toISOString() } });
+      }),
+
+      /* Verificación del correo universitario por enlace. */
+      hayEnlaceVerificacion: () => { try { return verificador().auth().isSignInWithEmailLink(location.href); } catch (_) { return false; } },
+      correoPendiente: () => leerGuardado(CLAVE_CORREO),
+      enviarVerificacion: accion(async correo => {
+        exigirSesion();
+        const c = (correo || '').trim().toLowerCase();
+        if (!L.universidadPorCorreo(c, cfg)) throw new Error('Ese correo no es de una universidad de la lista. Usa tu correo de la universidad.');
+        await verificador().auth().sendSignInLinkToEmail(c, { url: location.origin + location.pathname + '?verificar=1', handleCodeInApp: true });
+        guardar(CLAVE_CORREO, c);
+      }),
+      completarVerificacion: accion(async correoEscrito => {
+        const u = exigirSesion();
+        const sec = verificador();
+        if (!sec.auth().isSignInWithEmailLink(location.href)) throw new Error('El enlace no es válido o ya se usó. Pide uno nuevo.');
+        const c = (correoEscrito || leerGuardado(CLAVE_CORREO)).trim().toLowerCase();
+        if (!c) { const e = new Error('Escribe el correo universitario al que llegó el enlace.'); e.pideCorreo = true; throw e; }
+        const cred = await sec.auth().signInWithEmailLink(c, location.href);
+        const vid = cred.user.uid;
+        try {
+          const vref = sec.firestore().collection('verificaciones').doc(vid);
+          const previo = await vref.get();
+          if (previo.exists && previo.data().uid !== u.id) throw new Error('Ese correo universitario ya verificó otra cuenta de Relevo.');
+          if (!previo.exists) await vref.set({ uid: u.id, correo: c, creado: new Date().toISOString() });
+          await db.collection('usuarios').doc(u.id).update({ correoUniversitario: c, universidad: L.universidadPorCorreo(c, cfg), verificacionUniversitaria: vid });
+        } finally {
+          await sec.auth().signOut().catch(() => {});
+        }
+        guardar(CLAVE_CORREO, null);
+        history.replaceState(null, '', location.pathname + '#/verificar');
+        return { correo: c, universidad: L.universidadPorCorreo(c, cfg) };
       }),
 
       aprobarPublicacion: accion(async id => { exigirEquipo(); await db.collection('publicaciones').doc(id).update({ revision: 'aprobada', fotoVerificada: true, motivoRechazo: '' }); }),

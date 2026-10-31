@@ -118,6 +118,12 @@
     igual(L.vendedorVerificado({ correo: 'a@gmail.com' }, cfg), false);
     igual(L.vendedorVerificado({ correo: 'a@gmail.com', aprobadoPorEquipo: true }, cfg), true);
     igual(L.vendedorVerificado({ correo: 'a@upc.edu.pe.falso.com' }, cfg), false);
+    igual(L.vendedorVerificado({ correo: 'a@gmail.com', correoUniversitario: 'a@cientifica.edu.pe' }, cfg), true);
+    igual(L.vendedorVerificado({ correo: 'a@gmail.com', correoUniversitario: 'a@gmail.com' }, cfg), false);
+  });
+  await prueba('La Universidad Científica del Sur está en la lista', () => {
+    igual(L.universidadPorCorreo('alumno@cientifica.edu.pe', cfg), 'Universidad Científica del Sur');
+    igual(Array.isArray(cfg.PUNTOS_ENTREGA['Universidad Científica del Sur']), true);
   });
   await prueba('La vista del comprador nunca recibe la comisión', () => {
     const p = L.pedidoParaComprador({ ...L.nuevoPedido(pub, 'c', '12345678', t0), comision: 4, recibe: 31 });
@@ -170,6 +176,12 @@
     const p = await D.comprar('m1', '55667788');
     igual(p.estado, 'pago_informado'); igual(D.disponible('m1'), false);
     await lanza(() => D.comprar('m1', '55667788'), 'ya está comprando');
+  });
+  await prueba('Verificar correo universitario en la demo', async () => {
+    await D.iniciarSesion('u-vendedora');
+    await lanza(() => D.enviarVerificacion('lucia@gmail.com'), 'no es de una universidad');
+    await D.enviarVerificacion('lucia.demo@cientifica.edu.pe');
+    const u = D.sesion(); igual(u.correoUniversitario, 'lucia.demo@cientifica.edu.pe'); igual(L.vendedorVerificado(u, cfg), true);
   });
   await prueba('Un estudiante no puede mover pedidos ajenos ni confirmar pagos', async () => {
     await D.iniciarSesion('u-vendedor');

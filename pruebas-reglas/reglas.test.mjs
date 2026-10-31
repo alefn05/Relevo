@@ -152,6 +152,18 @@ test('Usuarios: cada uno lee lo suyo y no puede autoaprobarse', async () => {
   await assertSucceeds(updateDoc(doc(admin(), 'usuarios/comprador'), { aprobadoPorEquipo: true }));
 });
 
+test('Correo universitario: solo con comprobante propio y una cuenta por correo', async () => {
+  const univ = como('sesion-univ', 'alumno@cientifica.edu.pe');
+  await assertSucceeds(setDoc(doc(univ, 'verificaciones/sesion-univ'), { uid: 'comprador', correo: 'alumno@cientifica.edu.pe', creado: ahora }));
+  await assertFails(setDoc(doc(univ, 'verificaciones/sesion-univ'), { uid: 'extrano', correo: 'alumno@cientifica.edu.pe', creado: ahora }));
+  const gmail = como('sesion-gmail', 'x@gmail.com');
+  await assertFails(setDoc(doc(gmail, 'verificaciones/sesion-gmail'), { uid: 'extrano', correo: 'x@gmail.com', creado: ahora }));
+  const cambio = { correoUniversitario: 'alumno@cientifica.edu.pe', universidad: 'Universidad Científica del Sur', verificacionUniversitaria: 'sesion-univ' };
+  await assertFails(updateDoc(doc(vendedor(), 'usuarios/vendedor'), cambio));
+  await assertSucceeds(updateDoc(doc(comprador(), 'usuarios/comprador'), cambio));
+  await assertFails(updateDoc(doc(comprador(), 'usuarios/comprador'), { ...cambio, correoUniversitario: 'otro@upc.edu.pe' }));
+});
+
 test('Las colecciones del MVP anterior quedan cerradas', async () => {
   await assertFails(getDoc(doc(anonimo(), 'products/x')));
   await assertFails(setDoc(doc(comprador(), 'orders/x'), { a: 1 }));

@@ -130,6 +130,17 @@
         reemplazar({ ...p, entrega: { punto, horario: horario || '', propuestoPor: u.id, fecha: new Date().toISOString() } });
       }),
 
+      /* Verificación del correo universitario: en la demo se simula sin enviar ningún correo. */
+      hayEnlaceVerificacion: () => false,
+      correoPendiente: () => '',
+      enviarVerificacion: accion(correo => {
+        const u = exigirSesion(); const c = (correo || '').trim().toLowerCase();
+        if (!L.universidadPorCorreo(c, cfg)) throw new Error('Ese correo no es de una universidad de la lista. Usa tu correo de la universidad.');
+        ponerUsuario(u.id, () => ({ correoUniversitario: c, universidad: L.universidadPorCorreo(c, cfg) }));
+        return { demo: true };
+      }),
+      completarVerificacion: accion(() => { throw new Error('En la demo no se envían enlaces.'); }),
+
       /* Acciones del equipo: se rechazan si la sesión no es del equipo. */
       aprobarPublicacion: accion(id => { exigirEquipo(); ponerPub(id, () => ({ revision: 'aprobada', fotoVerificada: true, motivoRechazo: '' })); }),
       rechazarPublicacion: accion((id, motivo) => { exigirEquipo(); if (!(motivo || '').trim()) throw new Error('Escribe el motivo del rechazo.'); ponerPub(id, () => ({ revision: 'rechazada', motivoRechazo: motivo.trim() })); }),
