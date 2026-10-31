@@ -13,5 +13,17 @@ Object.assign(window.RELEVO_CONFIG, {
     appId: '1:918035821584:web:c8d39266c6b0bdaef98695'
   },
   /* Correos del equipo. Deben ser exactamente los mismos que la lista ADMINS de firestore.rules. */
-  CORREOS_ADMIN: ['u202312020@gmail.com', 'u202321380@upc.edu.pe']
+  CORREOS_ADMIN: [
+    'u202312020@gmail.com',
+    'u202321380@upc.edu.pe',
+    'jenniferizquierdovictorio@gmail.com',
+    'u20231a309@upc.edu.pe',
+    'emileu07@gmail.com',
+    'u202311237@upc.edu.pe',
+    'richirosell2010@gmail.com',
+    'u20211g626@upc.edu.pe',
+    'marzanoandrea.6@gmail.com',
+    'u20231b048@upc.edu.pe',
+    'alessandromalpica95@gmail.com'
+  ]
 });

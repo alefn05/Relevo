@@ -7,7 +7,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Correos del equipo. Deben ser los mismos que CORREOS_ADMIN en piloto/config-piloto.js.
-    function admins() { return ['u202312020@gmail.com', 'u202321380@upc.edu.pe']; }
+    function admins() {
+      return ['u202312020@gmail.com', 'u202321380@upc.edu.pe', 'jenniferizquierdovictorio@gmail.com', 'u20231a309@upc.edu.pe', 'emileu07@gmail.com', 'u202311237@upc.edu.pe', 'richirosell2010@gmail.com', 'u20211g626@upc.edu.pe', 'marzanoandrea.6@gmail.com', 'u20231b048@upc.edu.pe', 'alessandromalpica95@gmail.com'];
+    }
 
     function conSesion() { return request.auth != null; }
     function uid() { return request.auth.uid; }
