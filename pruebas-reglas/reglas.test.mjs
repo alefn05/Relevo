@@ -164,6 +164,21 @@ test('Correo universitario: solo con comprobante propio y una cuenta por correo'
   await assertFails(updateDoc(doc(comprador(), 'usuarios/comprador'), { ...cambio, correoUniversitario: 'otro@upc.edu.pe' }));
 });
 
+test('Chat: solo comprador, vendedor y equipo, y solo con el pago confirmado', async () => {
+  const msg = (autorId, rol) => ({ autorId, rol, texto: 'Hola', fecha: ahora });
+  await assertFails(setDoc(doc(comprador(), 'pedidos/p1/mensajes/a'), msg('comprador', 'comprador')), 'Con pago informado sigue cerrado');
+  await env.withSecurityRulesDisabled(ctx => updateDoc(doc(ctx.firestore(), 'pedidos/p1'), { estado: 'pago_confirmado' }));
+  await assertSucceeds(setDoc(doc(comprador(), 'pedidos/p1/mensajes/b'), msg('comprador', 'comprador')));
+  await assertSucceeds(setDoc(doc(vendedor(), 'pedidos/p1/mensajes/c'), msg('vendedor', 'vendedor')));
+  await assertSucceeds(setDoc(doc(admin(), 'pedidos/p1/mensajes/d'), msg('admin', 'equipo')));
+  await assertFails(setDoc(doc(comprador(), 'pedidos/p1/mensajes/e'), msg('comprador', 'equipo')), 'No puede fingir ser del equipo');
+  await assertFails(setDoc(doc(extrano(), 'pedidos/p1/mensajes/f'), msg('extrano', 'comprador')));
+  await assertFails(getDoc(doc(extrano(), 'pedidos/p1/mensajes/b')));
+  await assertSucceeds(getDoc(doc(vendedor(), 'pedidos/p1/mensajes/b')));
+  await assertSucceeds(getDoc(doc(admin(), 'pedidos/p1/mensajes/b')));
+  await assertFails(updateDoc(doc(comprador(), 'pedidos/p1/mensajes/b'), { texto: 'Cambiado' }));
+});
+
 test('Las colecciones del MVP anterior quedan cerradas', async () => {
   await assertFails(getDoc(doc(anonimo(), 'products/x')));
   await assertFails(setDoc(doc(comprador(), 'orders/x'), { a: 1 }));

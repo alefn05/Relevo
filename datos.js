@@ -61,6 +61,15 @@
         historial: [paso('pago_pendiente', 4), paso('cancelado', 4, -1, 'comprador', 'Cancelado por el comprador')] }
     ];
 
+    const mensajes = {
+      'P-DEMO2': [
+        { id: 'm1', autorId: 'u-vendedora', rol: 'vendedor', texto: 'Hola, ¿te queda bien el patio de comidas el jueves a la 1 p. m.?', fecha: hace(1, 18) },
+        { id: 'm2', autorId: 'u-comprador', rol: 'comprador', texto: 'Sí, perfecto. Nos vemos ahí.', fecha: hace(1, 17) }
+      ]
+    };
+    pedidos.find(p => p.id === 'P-DEMO2').ultimoMensaje = hace(1, 17);
+    const oyentesChat = {};
+
     let estado = { listo: false, sesionId: null, usuarios, publicaciones, pedidos };
     const oyentes = new Set();
     const emitir = () => oyentes.forEach(f => f(estado));
@@ -128,6 +137,24 @@
         if (!L.rolEnPedido(u, p, cfg)) throw new Error('Este pedido no es tuyo.');
         if (!punto) throw new Error('Elige un punto de entrega.');
         reemplazar({ ...p, entrega: { punto, horario: horario || '', propuestoPor: u.id, fecha: new Date().toISOString() } });
+      }),
+
+      /* Chat del pedido. */
+      escucharMensajes: (pedidoId, fn) => {
+        const lista = oyentesChat[pedidoId] || (oyentesChat[pedidoId] = new Set());
+        lista.add(fn); fn((mensajes[pedidoId] || []).slice());
+        return () => lista.delete(fn);
+      },
+      enviarMensaje: accion((pedidoId, texto) => {
+        const u = exigirSesion(); const p = pedidoDe(pedidoId);
+        const rol = L.rolEnPedido(u, p, cfg);
+        if (!rol) throw new Error('Este pedido no es tuyo.');
+        if (!L.chatAbierto(p.estado)) throw new Error('El chat no está abierto en este estado del pedido.');
+        const v = L.validarMensaje(texto); if (!v.valido) throw new Error(v.error);
+        const m = { id: 'm' + Date.now(), autorId: u.id, rol, texto: v.texto, fecha: new Date().toISOString() };
+        mensajes[pedidoId] = [...(mensajes[pedidoId] || []), m];
+        (oyentesChat[pedidoId] || new Set()).forEach(fn => fn(mensajes[pedidoId].slice()));
+        reemplazar({ ...p, ultimoMensaje: m.fecha });
       }),
 
       /* Verificación del correo universitario: en la demo se simula sin enviar ningún correo. */

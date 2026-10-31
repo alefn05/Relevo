@@ -118,6 +118,8 @@ service cloud.firestore {
           && nuevo().historial[actual().historial.size()].estado == nuevo().estado;
       }
       function entregaAbierta() { return actual().estado in ['pago_confirmado', 'en_coordinacion']; }
+      // Mismos estados que ESTADOS_CHAT en logica.js: el chat se abre cuando el equipo confirma el pago.
+      function estadosChat() { return ['pago_confirmado', 'en_coordinacion', 'entregado', 'en_reclamo']; }
 
       allow read: if (conSesion() && (actual().compradorId == uid() || actual().vendedorId == uid())) || esAdmin();
 
@@ -146,8 +148,25 @@ service cloud.firestore {
         || (esVendedor() && (
               (historialCrece() && soloCambia(['estado', 'historial', 'reclamoAbierto']) && nuevo().estado == 'en_reclamo'
                 && actual().estado in ['pago_confirmado', 'en_coordinacion'] && nuevo().reclamoAbierto == true)
-           || (mismoEstado() && entregaAbierta() && soloCambia(['entrega']))));
+           || (mismoEstado() && entregaAbierta() && soloCambia(['entrega']))))
+        // Marca de último mensaje del chat, para el aviso de "Mensaje nuevo".
+        || ((esComprador() || esVendedor()) && mismoEstado() && actual().estado in estadosChat()
+            && soloCambia(['ultimoMensaje']) && nuevo().ultimoMensaje == request.time);
       allow delete: if false;
+
+      // ---------- Chat del pedido: solo comprador, vendedor y equipo ----------
+      match /mensajes/{mid} {
+        function ped() { return get(/databases/$(database)/documents/pedidos/$(id)).data; }
+        allow read: if (conSesion() && (ped().compradorId == uid() || ped().vendedorId == uid())) || esAdmin();
+        allow create: if conSesion()
+          && (ped().compradorId == uid() || ped().vendedorId == uid() || esAdmin())
+          && ped().estado in estadosChat()
+          && nuevo().autorId == uid()
+          && nuevo().rol == (ped().compradorId == uid() ? 'comprador' : (ped().vendedorId == uid() ? 'vendedor' : 'equipo'))
+          && nuevo().texto is string && nuevo().texto.size() > 0 && nuevo().texto.size() <= 1000
+          && nuevo().keys().hasOnly(['autorId', 'rol', 'texto', 'fecha', 'creadoServidor']);
+        allow update, delete: if false;
+      }
     }
 
     // ---------- Reclamos: los crea el comprador o el vendedor del pedido; solo el equipo los lee ----------

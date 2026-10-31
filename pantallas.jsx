@@ -493,7 +493,7 @@ function MisPedidos({ tipo }) {
           return <li key={p.id} className="fila">
             <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: 16, alignItems: 'start' }}>
               <Cuadro cat={pub.categoria} foto={portadaDe(pub)} alt="" />
-              <div><p style={{ margin: 0, fontWeight: 500 }}>{pub.titulo}</p><p className="secundario pequeno" style={{ margin: '2px 0 8px' }}>Pedido {p.id} · {fechaCorta(p.creado)}</p><EstadoTexto estado={p.estado} /></div>
+              <div><p style={{ margin: 0, fontWeight: 500 }}>{pub.titulo}</p><p className="secundario pequeno" style={{ margin: '2px 0 8px' }}>Pedido {p.id} · {fechaCorta(p.creado)}</p><EstadoTexto estado={p.estado} />{hayMensajeNuevo(p) && <span className="aviso-mensaje"><span className="testigo" aria-hidden="true" />Mensaje nuevo</span>}</div>
             </div>
             <div style={{ textAlign: 'right' }} className="pila">
               {tipo === 'compras' ? <p className="h3 cifra">{L.soles(p.precio)}</p>
@@ -515,6 +515,56 @@ function MisPedidos({ tipo }) {
       <NotaError>{acc.error}</NotaError>
     </section>}
   </div>;
+}
+
+/* ---------- Chat del pedido ---------- */
+const fechaMs = f => !f ? 0 : typeof f === 'string' ? Date.parse(f) : f.toMillis ? f.toMillis() : (f.seconds ? f.seconds * 1000 : 0);
+const claveVisto = id => 'relevoChatVisto:' + id;
+const marcarVisto = id => { try { localStorage.setItem(claveVisto(id), String(Date.now())); } catch (_) { } };
+/* "Mensaje nuevo" se calcula en este dispositivo: compara el último mensaje con la última vez que se abrió el chat. */
+const hayMensajeNuevo = p => { if (!p.ultimoMensaje) return false; let visto = 0; try { visto = +localStorage.getItem(claveVisto(p.id)) || 0; } catch (_) { } return fechaMs(p.ultimoMensaje) > visto; };
+
+function Chat({ pedido, rol, yo }) {
+  const [mensajes, setMensajes] = useState(null);
+  const [texto, setTexto] = useState('');
+  const acc = usarAccion();
+  const caja = useRef();
+  useEffect(() => Datos.escucharMensajes(pedido.id, m => { setMensajes(m); marcarVisto(pedido.id); }), [pedido.id]);
+  useEffect(() => { const c = caja.current; if (c) c.scrollTop = c.scrollHeight; }, [mensajes && mensajes.length]);
+  const otro = rol === 'comprador' ? 'el vendedor' : rol === 'vendedor' ? 'el comprador' : 'comprador y vendedor';
+  if (!L.chatVisible(pedido.estado)) return <section className="pila" aria-label="Chat del pedido">
+    <h2 className="h3">Chat</h2>
+    <p className="nota">El chat con {otro} se abre cuando el equipo confirme el pago.</p>
+  </section>;
+  const abierto = L.chatAbierto(pedido.estado);
+  const enviar = async e => {
+    e && e.preventDefault();
+    const v = L.validarMensaje(texto); if (!v.valido) { acc.setError(v.error); return; }
+    try { await acc.correr(() => Datos.enviarMensaje(pedido.id, v.texto)); setTexto(''); marcarVisto(pedido.id); } catch (_) { }
+  };
+  const autor = m => m.autorId === yo ? 'Tú' : m.rol === 'equipo' ? 'Equipo de Relevo' : m.rol === 'vendedor' ? 'Vendedor' : 'Comprador';
+  return <section className="chat pila-3" aria-label="Chat del pedido">
+    <h2 className="h3">{rol === 'equipo' ? 'Chat del pedido' : 'Chat con ' + otro}</h2>
+    <div className="chat-mensajes" ref={caja} role="log" aria-live="polite" aria-label="Mensajes">
+      {mensajes === null ? <Arco texto="Cargando mensajes" />
+        : !mensajes.length ? <p className="secundario pequeno chat-vacio">Todavía no hay mensajes. Escribe para coordinar la entrega.</p>
+          : mensajes.map(m => <div key={m.id} className={'burbuja' + (m.autorId === yo ? ' propia' : m.rol === 'equipo' ? ' del-equipo' : '')}>
+            <span className="burbuja-autor">{autor(m)} · {fechaHora(m.fecha)}</span>
+            <p>{m.texto}</p>
+          </div>)}
+    </div>
+    {abierto
+      ? <form className="chat-envio" onSubmit={enviar}>
+        <label className="oculto" htmlFor="chat-texto">Mensaje</label>
+        <textarea id="chat-texto" className="entrada" rows={2} maxLength={L.MAX_MENSAJE} value={texto} placeholder="Escribe un mensaje"
+          onChange={e => { setTexto(e.target.value); if (acc.error) acc.setError(''); }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } }} />
+        <button className="boton" disabled={acc.cargando || !texto.trim()}>{acc.cargando ? 'Enviando' : 'Enviar'}</button>
+      </form>
+      : <p className="secundario pequeno">El pedido terminó. El chat queda solo de lectura.</p>}
+    <NotaError>{acc.error}</NotaError>
+    <p className="secundario pequeno">El equipo de Relevo puede leer este chat para resolver reclamos. No compartas contraseñas ni datos bancarios, y no pagues por fuera de Relevo.</p>
+  </section>;
 }
 
 /* ---------- Detalle del pedido: estado, entrega y reclamos ---------- */
@@ -583,6 +633,7 @@ function Pedido({ id }) {
         </div>}
         {puedeReclamar && !(rol === 'comprador' && p.estado === 'en_coordinacion') && <button className="enlace" onClick={() => setReclamo(true)}>Reportar un problema</button>}
         <NotaError>{acc.error}</NotaError>
+        <Chat pedido={p} rol={rol} yo={d.sesion.id} />
         <div><BotonWhatsApp mensaje={'Hola, escribo por el pedido ' + p.id + ' de Relevo.'} /></div>
       </div>
 
@@ -687,7 +738,7 @@ function Equipo() {
         {tab === 'transferencias' && lista.map(p => filaPedido(p, <dl className="datos" style={{ marginTop: 16, maxWidth: 420 }}><div><dt>Precio</dt><dd className="cifra">{L.soles(p.precio)}</dd></div><div><dt>Comisión</dt><dd className="cifra">{L.soles(CFG.COMISION_VENDEDOR)}</dd></div><div><dt>Transferir a {p.vendedorNombre || usuario(p.vendedorId).nombre}</dt><dd className="cifra" style={{ fontWeight: 500 }}>{L.soles(L.calcularVenta(p.precio, CFG).recibe)}</dd></div></dl>,
           <button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'transferido'), 'Transferencia registrada.')}>Marcar transferido</button>))}
         {tab === 'reclamos' && lista.map(p => filaPedido(p, <p className="pequeno" style={{ margin: '8px 0 0' }}>{(MOTIVOS.find(m => m[0] === (p.reclamo || {}).motivo) || [, 'Otro'])[1]}{p.reclamo && p.reclamo.detalle ? ': ' + p.reclamo.detalle : ''}</p>,
-          <><button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'en_coordinacion'), 'El pedido volvió a coordinación.')}>Volver a coordinación</button>
+          <><A a={'/pedido/' + p.id} className="enlace">Ver pedido y chat</A><button className="boton" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'en_coordinacion'), 'El pedido volvió a coordinación.')}>Volver a coordinación</button>
             <button className="enlace" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'entregado'), 'Reclamo cerrado como entregado.')}>Cerrar como entregado</button>
             <button className="enlace enlace-secundario" disabled={acc.cargando} onClick={() => correr(() => Datos.moverPedido(p.id, 'cancelado', { motivo: 'Reclamo resuelto con devolución' }), 'Pedido cancelado. Devuelve el pago por Yape.')}>Cancelar y devolver</button></>))}
         {tab === 'vendedores' && lista.map(u => <li key={u.id} className="fila">
@@ -763,6 +814,7 @@ function Legal({ cual }) {
     privacidad: ['Aviso de privacidad', <>
       <h2>Qué datos pedimos</h2><p>Solo lo necesario: tu nombre, tu correo y tu universidad. Para las compras, el número de operación de Yape. No pedimos capturas de comprobantes, DNI ni datos bancarios del comprador.</p>
       <h2>Para qué los usamos</h2><p>Para verificar que eres estudiante, gestionar pagos, coordinar entregas y atender reclamos. No vendemos ni compartimos tus datos con terceros con fines comerciales.</p>
+      <h2>Chat del pedido</h2><p>Los mensajes entre comprador y vendedor se guardan en el pedido. El equipo de Relevo puede leerlos solo para resolver reclamos y problemas con la entrega.</p>
       <h2>Fotos</h2><p>Las fotos de los materiales se muestran en la publicación. Guardamos la fecha y hora en que se suben. No incluyas personas ni datos personales en ellas.</p>
       <h2>Tus derechos</h2><p>Puedes pedir acceso, corrección o eliminación de tus datos escribiendo al equipo, conforme a la Ley N.° 29733 de Protección de Datos Personales.</p>
       <h2>Esta demostración</h2><p>En la versión de demostración, todo funciona con datos de ejemplo en tu navegador y nada se guarda al recargar.</p></>]

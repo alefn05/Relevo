@@ -105,6 +105,13 @@
     igual(p.estado, 'pago_informado'); igual(n.estado, 'pago_confirmado');
   });
 
+  await prueba('El chat se abre al confirmar el pago y se cierra al terminar', () => {
+    igual(L.chatAbierto('pago_informado'), false); igual(L.chatAbierto('pago_pendiente'), false);
+    for (const e of ['pago_confirmado', 'en_coordinacion', 'entregado', 'en_reclamo']) igual(L.chatAbierto(e), true, e + ':');
+    igual(L.chatAbierto('transferido'), false); igual(L.chatVisible('transferido'), true); igual(L.chatVisible('pago_informado'), false);
+    igual(L.validarMensaje('  ').valido, false); igual(L.validarMensaje('x'.repeat(1001)).valido, false); igual(L.validarMensaje(' Hola ').texto, 'Hola');
+  });
+
   /* ---------- Permisos ---------- */
   await prueba('Vista del equipo: solo rol equipo (demo) o correo administrador', () => {
     igual(L.esEquipo(null, cfg), false);

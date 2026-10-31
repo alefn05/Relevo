@@ -211,6 +211,23 @@
         await db.collection('pedidos').doc(id).update({ entrega: { punto, horario: horario || '', propuestoPor: u.id, fecha: new Date().toISOString() } });
       }),
 
+      /* Chat del pedido: subcolección pedidos/{id}/mensajes, protegida por firestore.rules. */
+      escucharMensajes: (pedidoId, fn) => db.collection('pedidos').doc(pedidoId).collection('mensajes').orderBy('fecha').onSnapshot(
+        s => fn(s.docs.map(d => ({ id: d.id, ...d.data() }))),
+        e => { console.warn('mensajes', e.code); fn([]); }),
+      enviarMensaje: accion(async (pedidoId, texto) => {
+        const u = exigirSesion(); const p = pedidoDe(pedidoId);
+        const rol = L.rolEnPedido(u, p, cfg);
+        if (!rol) throw new Error('Este pedido no es tuyo.');
+        if (!L.chatAbierto(p.estado)) throw new Error('El chat no está abierto en este estado del pedido.');
+        const v = L.validarMensaje(texto); if (!v.valido) throw new Error(v.error);
+        const ref = db.collection('pedidos').doc(pedidoId);
+        const lote = db.batch();
+        lote.set(ref.collection('mensajes').doc(), { autorId: u.id, rol, texto: v.texto, fecha: new Date().toISOString(), creadoServidor: servidor() });
+        lote.update(ref, { ultimoMensaje: servidor() });
+        await lote.commit();
+      }),
+
       /* Verificación del correo universitario por enlace. */
       hayEnlaceVerificacion: () => { try { return verificador().auth().isSignInWithEmailLink(location.href); } catch (_) { return false; } },
       correoPendiente: () => leerGuardado(CLAVE_CORREO),

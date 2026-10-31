@@ -58,6 +58,18 @@
     cancelado: {}
   };
 
+  /* Chat del pedido: se abre cuando el equipo confirma el pago y queda solo de lectura al terminar. */
+  const ESTADOS_CHAT = ['pago_confirmado', 'en_coordinacion', 'entregado', 'en_reclamo'];
+  const chatAbierto = estado => ESTADOS_CHAT.includes(estado);
+  const chatVisible = estado => chatAbierto(estado) || estado === 'transferido' || estado === 'cancelado';
+  const MAX_MENSAJE = 1000;
+  function validarMensaje(texto) {
+    const t = String(texto == null ? '' : texto).trim();
+    if (!t) return { valido: false, error: 'Escribe un mensaje.' };
+    if (t.length > MAX_MENSAJE) return { valido: false, error: 'El mensaje es muy largo. Máximo ' + MAX_MENSAJE + ' caracteres.' };
+    return { valido: true, error: null, texto: t };
+  }
+
   function puedeCambiar(pedido, nuevo, rol) {
     const t = TRANSICIONES[pedido.estado] || {};
     return !!(t[nuevo] && t[nuevo].includes(rol));
@@ -195,7 +207,7 @@
   }
 
   const L = {
-    soles, leerPrecio, calcularVenta, ESTADOS, CAMINO, TRANSICIONES, puedeCambiar, cambiarEstado, nuevoPedido, validarOperacion, validarMonto,
+    soles, leerPrecio, calcularVenta, ESTADOS, CAMINO, TRANSICIONES, puedeCambiar, cambiarEstado, nuevoPedido, validarOperacion, validarMonto, ESTADOS_CHAT, chatAbierto, chatVisible, validarMensaje, MAX_MENSAJE,
     universidadPorCorreo, vendedorVerificado, esEquipo, rolEnPedido, pedidoParaComprador,
     fechaLima, codigoDelDia, angulosDe, validarPublicacion, COLUMNAS_CSV, filaCSV, generarCSV
   };
