@@ -796,9 +796,8 @@ function Experimento({ ruta }) {
   </div>;
 }
 
-/* ---------- Páginas legales (texto provisional) ---------- */
+/* ---------- Páginas legales ---------- */
 function Legal({ cual }) {
-  const aviso = <p className="nota">Texto provisional. El equipo de Relevo debe revisarlo antes del piloto.</p>;
   const paginas = {
     terminos: ['Términos de uso', <>
       <h2>Qué es Relevo</h2><p>Relevo es un servicio para que estudiantes universitarios de Lima compren y vendan materiales académicos de segunda mano. En esta etapa, el equipo de Relevo gestiona a mano los pagos y la coordinación de las entregas.</p>
@@ -817,11 +816,11 @@ function Legal({ cual }) {
       <h2>Chat del pedido</h2><p>Los mensajes entre comprador y vendedor se guardan en el pedido. El equipo de Relevo puede leerlos solo para resolver reclamos y problemas con la entrega.</p>
       <h2>Fotos</h2><p>Las fotos de los materiales se muestran en la publicación. Guardamos la fecha y hora en que se suben. No incluyas personas ni datos personales en ellas.</p>
       <h2>Tus derechos</h2><p>Puedes pedir acceso, corrección o eliminación de tus datos escribiendo al equipo, conforme a la Ley N.° 29733 de Protección de Datos Personales.</p>
-      <h2>Esta demostración</h2><p>En la versión de demostración, todo funciona con datos de ejemplo en tu navegador y nada se guarda al recargar.</p></>]
+</>]
   };
   const [titulo, cuerpo] = paginas[cual];
   return <div className="pantalla contenedor grilla" style={{ paddingTop: 'clamp(40px, 6vw, 80px)' }}>
-    <div style={{ gridColumn: '1 / span 8' }} className="pila-3 legal"><h1 className="h1">{titulo}</h1>{aviso}{cuerpo}</div>
+    <div style={{ gridColumn: '1 / span 8' }} className="pila-3 legal"><h1 className="h1">{titulo}</h1>{cuerpo}</div>
   </div>;
 }
 
